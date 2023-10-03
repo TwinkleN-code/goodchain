@@ -1,6 +1,7 @@
 import hashlib
 import sqlite3
 import re
+import getpass
 
 def validate_password(password):
     if 8 <= len(password) <= 32:
@@ -29,7 +30,7 @@ def register_user():
         print('Username is already taken')
         return
     
-    password = input('Enter a password: ')
+    password = getpass.getpass('Enter a password: ')
 
     if not validate_password(password):
         print('Password must be between 8 and 32 characters and contain at least one lowercase letter, one uppercase letter, one number, and one special character')
@@ -51,7 +52,7 @@ def register_user():
 
 def login_user():
     username = input('Enter your username: ')
-    password = input('Enter your password: ')
+    password = getpass.getpass('Enter your password: ')
 
     hashed_pw = hashlib.sha256(password.encode()).hexdigest()
 
