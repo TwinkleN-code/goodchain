@@ -6,16 +6,18 @@ def clear_screen():
 def print_header(username=None):
     clear_screen()
 
-    header_username = ("##################")
+    # header_username = ("##################")
     header =("##################")
     title = ("#   GOODCHAIN    #")
 
     if username:
-        terminal_width = os.get_terminal_size().columns
-        logged_in_str = "Logged in as " + username
-        padding_required = terminal_width - len(header_username) - len(logged_in_str)
-        header_username += " " * padding_required + logged_in_str
-        print(header_username)
+        # terminal_width = os.get_terminal_size().columns // 2
+        # logged_in_str = "Logged in as " + username
+        # padding_required = terminal_width - len(header_username) - len(logged_in_str)
+        # header_username += " " * padding_required + logged_in_str
+        # print(header_username)
+        print("Logged in as: " + username + "\n")
+        print(header)
     else:
         print(header)
 

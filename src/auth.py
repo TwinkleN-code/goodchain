@@ -30,7 +30,7 @@ def username_exists(username):
         return True
 
 def register_user():
-    username = input('Enter a username: ')
+    username = input('Enter a username: ').lower()
 
     if username_exists(username):
         print_header()
@@ -73,7 +73,7 @@ def register_user():
     conn.close()
 
 def login_user():
-    username = input('Enter your username: ')
+    username = input('Enter your username: ').lower()
     password = getpass.getpass('Enter your password: ')
 
     hashed_pw = hashlib.sha256(password.encode()).hexdigest()
