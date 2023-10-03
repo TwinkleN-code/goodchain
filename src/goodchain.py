@@ -1,19 +1,24 @@
 from auth import register_user, login_user, logout_user
 from database import setup_db
+from utils import print_header
 
 current_user = None
 
 def main_menu():
     global current_user
+    print_header()
     while True:
         if current_user:
-            print(f'Logged in as {current_user}')
-            print('1. Logout')
-            print('2. Exit')
+            print("┌───────────────┐")
+            print("│ 1. Logout     │")
+            print("│ 2. Exit       │")
+            print("└───────────────┘")
         else:
-            print('1. Register')
-            print('2. Login')
-            print('3. Exit')
+            print("┌───────────────┐")
+            print("│ 1. Register   │")
+            print("│ 2. Login      │")
+            print("│ 3. Exit       │")
+            print("└───────────────┘")
         choice = input('> ')
         if not current_user:
             if choice == '1':
@@ -23,6 +28,7 @@ def main_menu():
             elif choice == '3':
                 break
             else:
+                print_header()
                 print('Invalid choice')
         else:
             if choice == '1':
@@ -31,6 +37,7 @@ def main_menu():
             elif choice == '2':
                 break
             else:
+                print_header(current_user)
                 print('Invalid choice')
 
 setup_db()
