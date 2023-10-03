@@ -160,4 +160,5 @@ cython_debug/
 #.idea/
 
 # Database
-users.db
+/users.db
+myenv/
