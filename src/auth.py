@@ -3,8 +3,12 @@ import re
 import getpass
 import bcrypt
 from utils import print_header
+from database import Database
 
 class User:
+
+    db = Database()
+
     def __init__(self):
         self.current_user = None
     
@@ -22,16 +26,8 @@ class User:
                 return True
                         
     def username_exists(self, username):
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-        c.execute('SELECT * FROM users WHERE username=?', (username,))
-        retrieved_user = c.fetchone()
-        conn.close()
-
-        if retrieved_user is None:
-            return False
-        else:
-            return True
+        results = self.db.fetch('SELECT username FROM users WHERE username=?', (username, ))
+        return results
 
     def register(self):
         username = input('Enter a username: ').lower()
@@ -63,12 +59,8 @@ class User:
         password = password.encode('utf-8')
         hashed_pw = bcrypt.hashpw(password, bcrypt.gensalt())
 
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-
         try:
-            c.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_pw))
-            conn.commit()
+            self.db.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_pw))
             print_header(username)
             print('Registration successful')
             self.current_user = username
@@ -76,31 +68,19 @@ class User:
             print_header()
             print('Username is already taken')
 
-        conn.close()
-
     def login(self):
         username = input('Enter your username: ').lower()
         password = getpass.getpass('Enter your password: ').encode('utf-8')
 
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-        c.execute('SELECT password FROM users WHERE username=?', (username, ))
+        retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (username, ))
 
-        retrieved_user = c.fetchone()
-
-        conn.close()
-
-        if retrieved_user is None:
+        if retrieved_user and bcrypt.checkpw(password, retrieved_user[0][0]):
+            print_header(username)
+            print('Login successful')
+            self.current_user = username
+        else:
             print_header()
             print('Invalid username or password')
-        else:
-            if bcrypt.checkpw(password, retrieved_user[0]):
-                print_header(username)
-                print('Login successful')
-                self.current_user = username
-            else:
-                print_header()
-                print('Invalid username or password')
                 
 
     def logout(self):

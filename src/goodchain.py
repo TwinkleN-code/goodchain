@@ -1,8 +1,9 @@
 from auth import User
-from database import setup_db
+from database import Database
 from utils import print_header
 
 user = User()
+db = Database()
 
 def display_menu(is_logged_in):
     if is_logged_in:
@@ -37,6 +38,6 @@ def main_menu():
             print_header(user.current_user)
             print('Invalid choice')
 
-setup_db()
+db.setup()
 
 main_menu()
