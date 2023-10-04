@@ -32,8 +32,16 @@ def main_menu():
     print_header()
     while True:
         options = display_menu(current_user)
+
+        max_option_length = max(len(opt['text']) for opt in options) + 6
+
+        print ("┌" + "─" * max_option_length + "┐")
+
         for opt in options: 
-            print(f"| {opt['option']}. {opt['text']} |")
+            spaces_required = max_option_length - len(opt['text']) - 4
+            print(f"│ {opt['option']}. {opt['text']}" + ' ' * spaces_required + "│")
+
+        print ("└" + "─" * max_option_length + "┘")
         choice = input('> ')
 
         action = next((opt['action'] for opt in options if opt['option'] == choice), None)
