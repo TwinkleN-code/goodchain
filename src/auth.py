@@ -1,7 +1,7 @@
-import hashlib
 import sqlite3
 import re
 import getpass
+import bcrypt
 from utils import print_header
 
 def validate_password(password):
@@ -56,7 +56,8 @@ def register_user():
         print('Passwords do not match')
         return
 
-    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+    password = password.encode('utf-8')
+    hashed_pw = bcrypt.hashpw(password, bcrypt.gensalt())
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -74,13 +75,11 @@ def register_user():
 
 def login_user():
     username = input('Enter your username: ').lower()
-    password = getpass.getpass('Enter your password: ')
-
-    hashed_pw = hashlib.sha256(password.encode()).hexdigest()
+    password = getpass.getpass('Enter your password: ').encode('utf-8')
 
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
-    c.execute('SELECT * FROM users WHERE username=? AND password=?', (username, hashed_pw))
+    c.execute('SELECT password FROM users WHERE username=?', (username, ))
 
     retrieved_user = c.fetchone()
 
@@ -91,9 +90,14 @@ def login_user():
         print('Invalid username or password')
         return None
     else:
-        print_header(username)
-        print('Login successful')
-        return username
+        if bcrypt.checkpw(password, retrieved_user[0]):
+            print_header(username)
+            print('Login successful')
+            return username
+        else:
+            print_header()
+            print('Invalid username or password')
+            return None
 
 def logout_user():
     print_header()
