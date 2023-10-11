@@ -28,7 +28,10 @@ class Database:
         self.execute(''' CREATE TABLE IF NOT EXISTS users (
                             ID INTEGER PRIMARY KEY AUTOINCREMENT, 
                             username TEXT NOT NULL UNIQUE, 
-                            password TEXT NOT NULL)''')
+                            password TEXT NOT NULL,
+                            privatekey TEXT NOT NULL,
+                            publickey TEXT NOT NULL,
+                            phrase TEXT NOT NULL)''')
         
     def fetch(self, query, params=None):
         conn = None

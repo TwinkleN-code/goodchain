@@ -2,6 +2,8 @@ import sqlite3
 import re
 import getpass
 import bcrypt
+from keys import *
+from recover_key import generate_recovery_phrase
 from utils import print_header
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD
@@ -61,10 +63,21 @@ class User:
         password = password.encode('utf-8')
         hashed_pw = bcrypt.hashpw(password, bcrypt.gensalt())
 
+        # create keys
+        user_private_key, user_public_key = generate_keys()
+        database_key = read_key()
+        encrypted_private_key = encrypt_private_key(database_key, user_private_key)
+
+        # create mnemonic phrase
+        phrase = generate_recovery_phrase()
+        hashed_phrase = bcrypt.hashpw(phrase.encode('utf-8'), bcrypt.gensalt())
+
         try:
-            self.db.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_pw))
+            self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
+            print('\nRegistration successful')
+            print("\n**Important: Keep Your Recovery Phrase Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
+            print("\nRECOVERY PHRASE: " + phrase)
             print_header(username)
-            print('Registration successful')
             self.current_user = username
             self.reward_user()
         except sqlite3.Error as e:
