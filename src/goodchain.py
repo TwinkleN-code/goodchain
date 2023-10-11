@@ -9,7 +9,9 @@ def display_menu(is_logged_in):
     if is_logged_in:
         return [
             {"option": "1", "text": "Logout", "action": lambda: user.logout()},
-            {"option": "2", "text": "Exit", "action": lambda: "exit"}
+            {"option": "2", "text": "Change username", "action": lambda: user.change_username()},
+            {"option": "3", "text": "Change password", "action": lambda: user.change_password()},
+            {"option": "4", "text": "Exit", "action": lambda: "exit"}
         ]
     else:
         return [

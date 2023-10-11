@@ -64,9 +64,9 @@ class User:
             print_header(username)
             print('Registration successful')
             self.current_user = username
-        except sqlite3.IntegrityError:
+        except sqlite3.Error as e:
             print_header()
-            print('Username is already taken')
+            print(f"Database error: {e}")
 
     def login(self):
         username = input('Enter your username: ').lower()
@@ -87,3 +87,59 @@ class User:
         print_header()
         print("You've been logged out")
         self.current_user = None
+
+    def change_username(self):
+        new_username = input('Enter a new username: ').lower()
+
+        if self.username_exists(new_username):
+            print_header(self.current_user)
+            print('Username is already taken')
+            return
+        
+        if not self.validate_username(new_username):
+            print_header(self.current_user)
+            print('Username must be between 3 and 32 characters and contain only letters and numbers')
+            return
+
+        try:
+            self.db.execute('UPDATE users SET username=? WHERE username=?', (new_username, self.current_user))
+            print_header(new_username)
+            print('Username successfully changed')
+            self.current_user = new_username
+        except sqlite3.IntegrityError:
+            print_header(self.current_user)
+            print('Username is already taken')
+
+    def change_password(self):        
+        new_password = getpass.getpass('Enter a new password: ')
+
+        if not self.validate_password(new_password):
+            print_header(self.current_user)
+            print('Password must be between 8 and 32 characters and contain at least one lowercase letter, one uppercase letter, one number, and one special character')
+            return
+        
+        new_password = new_password.encode('utf-8')
+        
+        retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (self.current_user, ))
+
+        if retrieved_user and bcrypt.checkpw(new_password, retrieved_user[0][0]):
+            print_header(self.current_user)
+            print('New password cannot be the same as the old password')
+            return
+        
+        confirm_password = getpass.getpass('Confirm password: ').encode('utf-8')
+
+        while new_password != confirm_password:
+            print_header(self.current_user)
+            print('Passwords do not match')
+            return
+        
+        hashed_pw = bcrypt.hashpw(new_password, bcrypt.gensalt())
+
+        try: 
+            self.db.execute('UPDATE users SET password=? WHERE username=?', (hashed_pw, self.current_user))
+            print_header(self.current_user)
+            print('Password successfully changed')
+        except sqlite3.Error as e:
+            print_header(self.current_user)
+            print(f"Database error: {e}")
