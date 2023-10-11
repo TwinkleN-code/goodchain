@@ -19,8 +19,12 @@ class Blockchain:
         return digest.finalize()
 
     def is_valid(self):
-        if self.previousBlock == None:
-            return True
-        if self.previousBlock.computeHash() != self.previousHash:
-            return False
-        return self.previousBlock.is_valid()
+        if self. previousBlock == None:
+            if self.blockHash == self.computeHash():
+                return True 
+            else:
+                return False
+        else:
+            current_block_validity = self.blockHash = self.computeHash()
+            previous_block_validity = self.previousBlock.is_valid_hash()
+            return current_block_validity and previous_block_validity

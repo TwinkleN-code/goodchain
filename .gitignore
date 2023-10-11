@@ -163,3 +163,4 @@ cython_debug/
 /users.db
 myenv/
 /.ds_store
+transactions.dat
