@@ -4,6 +4,8 @@ import getpass
 import bcrypt
 from utils import print_header
 from database import Database
+from transaction import transaction_pool, Transaction, REWARD
+from storage import save_to_file, load_from_file
 
 class User:
 
@@ -64,6 +66,7 @@ class User:
             print_header(username)
             print('Registration successful')
             self.current_user = username
+            self.reward_user()
         except sqlite3.Error as e:
             print_header()
             print(f"Database error: {e}")
@@ -143,3 +146,97 @@ class User:
         except sqlite3.Error as e:
             print_header(self.current_user)
             print(f"Database error: {e}")
+
+    def reward_user(self):
+        initial_transaction = Transaction(REWARD)
+        initial_transaction.add_output(self.current_user, 50)
+        transaction_pool.add_transaction(initial_transaction)
+
+    def view_balance(self):
+        transactions = load_from_file()
+        user_balance = self.calculate_balance(self.current_user, transactions)
+        print_header(self.current_user)
+        print(f"Balance for {self.current_user}: {user_balance} coins.")
+
+    def calculate_balance(self, user, transactions):
+        balance = 0
+        for tx in transactions:
+            for output_addr, tx_amount in tx.outputs:
+                if output_addr == user:
+                    balance += tx_amount
+            for input_addr, tx_amount in tx.inputs:
+                if input_addr == user:
+                    balance -= tx_amount
+        return balance
+    
+    def view_transactions(self):
+        transactions = load_from_file()
+
+        if not transactions:
+            print_header(self.current_user)
+            print("No transactions found.")
+        else:
+            print_header(self.current_user)
+            print("All Transactions:")
+            for tx in transactions:
+                print(tx)
+
+    def delete_account(self):
+        confirm = input('Are you sure you want to delete your account? (y/n) ')
+
+        if confirm == 'y':
+            try:
+                self.db.execute('DELETE FROM users WHERE username=?', (self.current_user, ))
+                print_header()
+                print('Account successfully deleted')
+                self.current_user = None
+            except sqlite3.Error as e:
+                print_header(self.current_user)
+                print(f"Database error: {e}")
+        else:
+            print_header(self.current_user)
+            print('Account deletion cancelled')
+
+    # def send_coins(self):
+    #     recipient = input('Enter the recipient: ').lower()
+    #     amount = input('Enter the amount: ')
+
+    #     try:
+    #         amount = int(amount)
+    #     except ValueError:
+    #         print_header(self.current_user)
+    #         print('Invalid amount')
+    #         return
+
+    #     if amount <= 0:
+    #         print_header(self.current_user)
+    #         print('Invalid amount')
+    #         return
+
+    #     if recipient == self.current_user:
+    #         print_header(self.current_user)
+    #         print("You can't send coins to yourself")
+    #         return
+
+    #     balance = 0
+    #     for tx in transaction_pool.get_transactions():
+    #         for output_addr, tx_amount in tx.outputs:
+    #             if output_addr == self.current_user:
+    #                 balance += tx_amount
+    #         for input_addr, tx_amount in tx.inputs:
+    #             if input_addr == self.current_user:
+    #                 balance -= tx_amount
+        
+    #     if balance < amount:
+    #         print_header(self.current_user)
+    #         print('Insufficient funds')
+    #         return
+
+    #     transaction = Transaction()
+    #     transaction.add_input(self.current_user, amount)
+    #     transaction.add_output(recipient, amount)
+    #     transaction.sign(self.current_user)
+    #     transaction_pool.add_transaction(transaction)
+
+    #     print_header(self.current_user)
+    #     print('Transaction successful')
