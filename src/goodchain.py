@@ -3,7 +3,7 @@ from auth import User
 from database import Database
 from keys import *
 from utils import print_header, display_menu_and_get_choice
-from recover_key import recover_private_key
+# from recover_key import recover_private_key
 
 user = User()
 db = Database()
@@ -13,8 +13,7 @@ def settings_menu():
     options = [
         {"option": "1", "text": "Change username", "action": lambda: user.change_username()},
         {"option": "2", "text": "Change password", "action": lambda: user.change_password()},
-        {"option": "3", "text": "Delete account", "action": lambda: user.delete_account()},
-        {"option": "4", "text": "Back to main menu", "action": lambda: "back"}
+        {"option": "3", "text": "Back to main menu", "action": lambda: "back"}
     ]
 
     display_menu_and_get_choice(options, user.current_user)

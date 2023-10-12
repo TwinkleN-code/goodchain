@@ -1,13 +1,17 @@
 import sqlite3
 import re
 import getpass
-import bcrypt
 from keys import *
-from recover_key import generate_recovery_phrase
+# from recover_key import generate_recovery_phrase
 from utils import print_header
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD
 from storage import save_to_file, load_from_file
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend
+from base64 import urlsafe_b64encode, urlsafe_b64decode
+import os
 
 class User:
 
@@ -32,6 +36,30 @@ class User:
     def username_exists(self, username):
         results = self.db.fetch('SELECT username FROM users WHERE username=?', (username, ))
         return results
+    
+    def hash_password(self, password: str, salt=None) -> str:
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt= salt if salt else os.urandom(16),
+            iterations=100000,
+            backend=default_backend()
+        )
+        key = kdf.derive(password)
+        return urlsafe_b64encode(key).decode('utf-8')
+    
+    def verify_password(self, stored_password: str, provided_password: str) -> bool:
+        """
+        Verify a password against the hashed version.
+        :param stored_password: The hashed password (from the database, for example).
+        :param provided_password: The password provided by the user to check.
+        :return: True if the passwords match, False otherwise.
+        """
+        salt, hashed = stored_password.split("$")
+        salt = urlsafe_b64decode(salt.encode())
+        expected_hashed_password = self.hash_password(provided_password, salt).split("$")[1]
+        return hashed == expected_hashed_password
+        
 
     def register(self):
         username = input('Enter a username: ').lower()
@@ -61,7 +89,7 @@ class User:
             return
 
         password = password.encode('utf-8')
-        hashed_pw = bcrypt.hashpw(password, bcrypt.gensalt())
+        hashed_pw = self.hash_password(password)
 
         # create keys
         user_private_key, user_public_key = generate_keys()
@@ -69,14 +97,14 @@ class User:
         encrypted_private_key = encrypt_private_key(database_key, user_private_key)
 
         # create mnemonic phrase
-        phrase = generate_recovery_phrase()
-        hashed_phrase = bcrypt.hashpw(phrase.encode('utf-8'), bcrypt.gensalt())
+        # phrase = generate_recovery_phrase()
+        # hashed_phrase = bcrypt.hashpw(phrase.encode('utf-8'), bcrypt.gensalt())
 
         try:
-            self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
-            print('\nRegistration successful')
-            print("\n**Important: Keep Your Recovery Phrase Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
-            print("\nRECOVERY PHRASE: " + phrase)
+            self.db.execute('INSERT INTO users (username, password, privatekey, publickey) VALUES (?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key))
+            # print('\nRegistration successful')
+            # print("\n**Important: Keep Your Recovery Phrase Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
+            # print("\nRECOVERY PHRASE: " + phrase)
             print_header(username)
             self.current_user = username
             self.reward_user()
@@ -90,7 +118,7 @@ class User:
 
         retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (username, ))
 
-        if retrieved_user and bcrypt.checkpw(password, retrieved_user[0][0]):
+        if self.verify_password(retrieved_user[0][0], password):
             print_header(username)
             print('Login successful')
             self.current_user = username
@@ -138,7 +166,7 @@ class User:
         
         retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (self.current_user, ))
 
-        if retrieved_user and bcrypt.checkpw(new_password, retrieved_user[0][0]):
+        if self.verify_password(retrieved_user[0][0], new_password):
             print_header(self.current_user)
             print('New password cannot be the same as the old password')
             return
@@ -150,7 +178,7 @@ class User:
             print('Passwords do not match')
             return
         
-        hashed_pw = bcrypt.hashpw(new_password, bcrypt.gensalt())
+        hashed_pw = self.hash_password(new_password)
 
         try: 
             self.db.execute('UPDATE users SET password=? WHERE username=?', (hashed_pw, self.current_user))
@@ -193,22 +221,6 @@ class User:
             print("All Transactions: \n")
             for tx in transactions:
                 print(tx)
-
-    def delete_account(self):
-        confirm = input('Are you sure you want to delete your account? (y/n) ')
-
-        if confirm == 'y':
-            try:
-                self.db.execute('DELETE FROM users WHERE username=?', (self.current_user, ))
-                print_header()
-                print('Account successfully deleted')
-                self.current_user = None
-            except sqlite3.Error as e:
-                print_header(self.current_user)
-                print(f"Database error: {e}")
-        else:
-            print_header(self.current_user)
-            print('Account deletion cancelled')
 
     # def send_coins(self):
     #     recipient = input('Enter the recipient: ').lower()

@@ -14,8 +14,7 @@ class Database:
                             username TEXT NOT NULL UNIQUE, 
                             password TEXT NOT NULL,
                             privatekey TEXT NOT NULL,
-                            publickey TEXT NOT NULL,
-                            phrase TEXT NOT NULL)''')
+                            publickey TEXT NOT NULL)''')
         
     def _execute(self, query, params=None, fetch=False):
         with self._connect() as conn:
