@@ -5,24 +5,8 @@ class Database:
     def __init__(self, db_name='users.db'):
         self.db_name = db_name
 
-    def execute(self, query, params=None):
-        conn = None
-        try:
-            conn = sqlite3.connect(self.db_name)
-            c = conn.cursor()
-
-            if params:
-                c.execute(query, params)
-            else:
-                c.execute(query)
-
-            conn.commit()
-            return c
-        except sqlite3.OperationalError as e:
-            print(f"Database error: {e}")
-        finally:
-            if conn:
-                conn.close()
+    def _connect(self):
+        return sqlite3.connect(self.db_name)
 
     def setup(self):
         self.execute(''' CREATE TABLE IF NOT EXISTS users (
@@ -33,23 +17,19 @@ class Database:
                             publickey TEXT NOT NULL,
                             phrase TEXT NOT NULL)''')
         
-    def fetch(self, query, params=None):
-        conn = None
-        results = None
-        try:
-            conn = sqlite3.connect(self.db_name)
+    def _execute(self, query, params=None, fetch=False):
+        with self._connect() as conn:
             c = conn.cursor()
-
             if params:
                 c.execute(query, params)
             else:
                 c.execute(query)
+            if fetch:
+                return c.fetchall()
+            conn.commit()
 
-            results = c.fetchall()
-        except sqlite3.Error as e:
-            print(f"Database error: {e}")
-        finally:
-            if conn:
-                conn.close()
+    def execute(self, query, params=None):
+        return self._execute(query, params)
 
-        return results
+    def fetch(self, query, params=None):
+        return self._execute(query, params, fetch=True)

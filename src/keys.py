@@ -1,23 +1,23 @@
 from cryptography.exceptions import *
 from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
+from cryptography.hazmat.primitives.asymmetric import ec, padding
 from database import Database
 from cryptography.fernet import Fernet
+from utils import print_header, display_menu_and_get_choice
 
 
 def generate_keys():
-    private_key = rsa.generate_private_key(public_exponent=65537,key_size=2048)
+    private_key = ec.generate_private_key(ec.SECP384R1())
     public_key = private_key.public_key()
 
     pbc_ser = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        format=serialization.PublicFormat.SubjectPublicKeyInfo).decode("utf-8").replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").strip()
     
     pr_ser = private_key.private_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()
-    )
+    encryption_algorithm=serialization.NoEncryption()).decode("utf-8").replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
 
     return pr_ser, pbc_ser
 
@@ -59,26 +59,28 @@ def decrypt(ciphertext, private_key):
     
 def view_user_keys(username):
     db = Database()
+    print_header(username)
     while True:
 
         # get public key 
         get_pb = db.fetch('SELECT publickey FROM users WHERE username=?', (username, ))
-        get_pb = get_pb[0][0].decode('utf-8')
-        print(f"\nPublic Key: \n{get_pb}")
+        get_pb = get_pb[0][0]
+        public_key = f"\nPublic Key: \n{get_pb}"
 
         # get private key and decrypt it
         get_pr = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
         db_key = read_key()
         decrypted = decrypt_private_key(db_key, get_pr[0][0])
-        print(f"Private Key: \n{str(decrypted)}")
-        
-        print("\n1. Return")
-        choice = input('> ')
+        private_key = f"Private Key: \n{str(decrypted)}"
 
-        if choice == "1":
-            return
-        else:
-            print('\nInvalid choice')
+        options = [
+        {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
+        ]
+
+        choice_result = display_menu_and_get_choice(options, username, public_key, private_key)
+
+        if choice_result == "back":
+            break
 
 
 # generate a key to encrypt
@@ -103,11 +105,15 @@ def read_key():
     except Exception as e:
         print("Exception: " + str(e))
         return False
-    
+
 def encrypt_private_key(encryption_key, private_key):
     if not isinstance(encryption_key, bytes):
-            encryption_key = encryption_key.encode('utf-8')
+        encryption_key = encryption_key.encode('utf-8')
 
+    # Ensure private_key is in bytes format
+    if not isinstance(private_key, bytes):
+        private_key = private_key.encode('utf-8')
+        
     key_object = Fernet(encryption_key)
     encrypted_private_key = key_object.encrypt(private_key)
     return encrypted_private_key

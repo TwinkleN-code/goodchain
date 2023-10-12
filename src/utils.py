@@ -7,6 +7,31 @@ from cryptography.hazmat.primitives import serialization
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+def display_menu_and_get_choice(options , username=None, *args):
+    """Display menu based on the provided options and get user's choice."""
+    max_option_length = max(len(opt['text']) for opt in options) + 6
+    while True:
+        print(*args, sep='\n')
+        print("┌" + "─" * max_option_length + "┐")
+        for opt in options:
+            spaces_required = max_option_length - len(opt['text']) - 4
+            print(f"│ {opt['option']}. {opt['text']}" + ' ' * spaces_required + "│")
+        print("└" + "─" * max_option_length + "┘")
+        
+        choice = input('> ')
+        action = next((opt['action'] for opt in options if opt['option'] == choice), None)
+        
+        
+        if action:
+            result = action()
+            if result in ["back", "exit"]:
+                print_header(username)
+                return result
+            return result
+        else:
+            print_header(username)
+            print('Invalid choice')
+
 def print_header(username=None):
     clear_screen()
     header =("##################")
