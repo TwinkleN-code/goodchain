@@ -164,3 +164,4 @@ cython_debug/
 myenv/
 /.ds_store
 transactions.dat
+key.txt
