@@ -18,9 +18,7 @@ class TransactionPool:
     
     def save_transaction_to_file(self, transaction):
         transactions = load_from_file()
-
         transactions.append(transaction)
-
         save_to_file(transactions)
 
 transaction_pool = TransactionPool()
@@ -47,45 +45,26 @@ class Transaction:
         message = self.__gather()
         newsig = sign(message, private)
         self.sigs.append(newsig)
+    
+    def _has_valid_signature(self, message, addr):
+        return any(verify(message, s, addr) for s in self.sigs)
                
     def is_valid(self):
-
         if self.type == REWARD:
-            if len(self.inputs)!=0 and len(self.outputs)!=1:
-                return False
-            return True
+            return len(self.inputs) == 0 and len(self.outputs) == 1
         
-        else:
-            total_in = 0
-            total_out = 0
-            message = self.__gather()
-            for addr,amount in self.inputs:
-                found = False
-                for s in self.sigs:
-                    if verify(message, s, addr):
-                        found = True
-                if not found:
-                    # print ("No good sig found for " + str(message))
-                    return False
-                if amount < 0:
-                    return False
-                total_in = total_in + amount
-            for addr in self.reqd:
-                found = False
-                for s in self.sigs:
-                    if verify(message, s, addr):
-                        found = True
-                if not found:
-                    return False
-            for addr,amount in self.outputs:
-                if amount < 0:
-                    return False
-                total_out = total_out + amount
+        total_in = sum(amt for _, amt in self.inputs if amt >= 0)
+        total_out = sum(amt for _, amt in self.outputs if amt >= 0)
 
-            if total_out > total_in:
-                # print("Outputs exceed inputs")
-                return False        
-            return True
+        if total_out > total_in:
+            return False
+
+        message = self._gather()
+        for addr, _ in self.inputs + self.reqd:
+            if not self._has_valid_signature(message, addr):
+                return False
+
+        return True
 
     def __gather(self):
         data=[]
@@ -96,22 +75,13 @@ class Transaction:
 
     def __repr__(self):
 
-        repr_str = "INPUTS:\n"
-        for addr, amt in self.inputs:
-            repr_str = repr_str + str(amt) + "from" + str(addr) + "\n"
-
-        repr_str += "OUTPUTS:\n"
-        for addr, amt in self.outputs:
-            repr_str = repr_str + str(amt) + "to" + str(addr) + "\n"
-
-        repr_str += "EXTRA REQUIRED SIGNATURES:\n"     
-        for req_sig in self.reqd:
-            repr_str = repr_str + str(req_sig) + "\n"
-
-        repr_str += "SIGNATURES:\n"     
-        for sig in self.sigs:
-            repr_str = repr_str + str(sig) + "\n"
-
-        repr_str += "END\n"
+        inputs_str = "\n".join(f"{amt} from {addr}" for addr, amt in self.inputs)
+        outputs_str = "\n".join(f"{amt} to {addr}" for addr, amt in self.outputs)
+        reqd_str = "\n".join(str(addr) for addr in self.reqd)
+        sigs_str = "\n".join(str(sig) for sig in self.sigs)
         
-        return repr_str
+        return (f"INPUTS:\n{inputs_str}"
+                f"OUTPUTS:\n{outputs_str} \n"
+                f"EXTRA REQUIRED SIGNATURES:\n{reqd_str}"
+                f"SIGNATURES:\n{sigs_str}"
+                f"END\n")

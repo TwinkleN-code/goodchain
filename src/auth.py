@@ -190,7 +190,7 @@ class User:
             print("No transactions found.")
         else:
             print_header(self.current_user)
-            print("All Transactions:")
+            print("All Transactions: \n")
             for tx in transactions:
                 print(tx)
 
