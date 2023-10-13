@@ -7,11 +7,14 @@ from utils import print_header
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD
 from storage import save_to_file, load_from_file
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.backends import default_backend
-from base64 import urlsafe_b64encode, urlsafe_b64decode
+# from cryptography.hazmat.primitives import hashes
+# from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+# from cryptography.hazmat.backends import default_backend
+# from base64 import urlsafe_b64encode, urlsafe_b64decode
+import hashlib
 import os
+
+PEPPER = b"MySecretPepperValue"
 
 class User:
 
@@ -37,28 +40,25 @@ class User:
         results = self.db.fetch('SELECT username FROM users WHERE username=?', (username, ))
         return results
     
-    def hash_password(self, password: str, salt=None) -> str:
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
-            salt= salt if salt else os.urandom(16),
+    def hash_password(self, password):
+        key = hashlib.pbkdf2_hmac(
+            'sha256',
+            password.encode('utf-8'),
+            PEPPER,
             iterations=100000,
-            backend=default_backend()
+            dklen=128
         )
-        key = kdf.derive(password)
-        return urlsafe_b64encode(key).decode('utf-8')
+        return key
     
-    def verify_password(self, stored_password: str, provided_password: str) -> bool:
-        """
-        Verify a password against the hashed version.
-        :param stored_password: The hashed password (from the database, for example).
-        :param provided_password: The password provided by the user to check.
-        :return: True if the passwords match, False otherwise.
-        """
-        salt, hashed = stored_password.split("$")
-        salt = urlsafe_b64decode(salt.encode())
-        expected_hashed_password = self.hash_password(provided_password, salt).split("$")[1]
-        return hashed == expected_hashed_password
+    def verify_password(self, stored_password, password):
+        new_key = hashlib.pbkdf2_hmac(
+            'sha256',
+            password.encode('utf-8'),
+            PEPPER,
+            iterations=100000,
+            dklen=128
+        )
+        return stored_password == new_key
         
 
     def register(self):
@@ -88,7 +88,6 @@ class User:
             print('Passwords do not match')
             return
 
-        password = password.encode('utf-8')
         hashed_pw = self.hash_password(password)
 
         # create keys
@@ -114,7 +113,7 @@ class User:
 
     def login(self):
         username = input('Enter your username: ').lower()
-        password = getpass.getpass('Enter your password: ').encode('utf-8')
+        password = getpass.getpass('Enter your password: ')
 
         retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (username, ))
 
@@ -162,7 +161,7 @@ class User:
             print('Password must be between 8 and 32 characters and contain at least one lowercase letter, one uppercase letter, one number, and one special character')
             return
         
-        new_password = new_password.encode('utf-8')
+        new_password = new_password
         
         retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (self.current_user, ))
 
@@ -171,7 +170,7 @@ class User:
             print('New password cannot be the same as the old password')
             return
         
-        confirm_password = getpass.getpass('Confirm password: ').encode('utf-8')
+        confirm_password = getpass.getpass('Confirm password: ')
 
         while new_password != confirm_password:
             print_header(self.current_user)
