@@ -1,4 +1,4 @@
-from cryptography.exceptions import *
+import sqlite3
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from database import Database
@@ -37,15 +37,9 @@ def encrypt(message, public_key):
             )
         )
         return ciphertext
-    except InvalidKey as e:
-        print(f"Invalid key: {e}")
-        return None
-    except (ValueError, InvalidTag) as e:
-        print(f"Value error or invalid tag: {e}")
-        return None
     except Exception as e:
         print("Exception: " + str(e))
-        return False
+        return ""
 
 def decrypt(ciphertext, private_key):
     try:
@@ -55,56 +49,63 @@ def decrypt(ciphertext, private_key):
         return text.decode('utf-8')
     except Exception as e:
         print("Exception: " + str(e))
-        return False
+        return ""
     
 def view_user_keys(username):
     db = Database()
     print_header(username)
-    while True:
 
-        # get public key 
+    # get public key 
+    try:
         get_pb = db.fetch('SELECT publickey FROM users WHERE username=?', (username, ))
-        get_pb = get_pb[0][0]
-        public_key = f"\nPublic Key: \n{get_pb}"
+    except sqlite3.Error as e:
+            print_header(username)
+            print(f"Database error: {e}")
 
-        # get private key and decrypt it
+    get_pb = get_pb[0][0]
+    public_key = f"\nPublic Key: \n{get_pb}"
+
+    # get private key and decrypt it
+    try:
         get_pr = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
-        db_key = read_key()
+    except sqlite3.Error as e:
+            print_header(username)
+            print(f"Database error: {e}")
+
+    db_key = read_key()
+    if db_key != "":
         decrypted = decrypt_private_key(db_key, get_pr[0][0])
         private_key = f"Private Key: \n{str(decrypted)}"
+    else:
+        print("Key not found")
 
-        options = [
-        {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
-        ]
-
-        choice_result = display_menu_and_get_choice(options, username, public_key, private_key)
-
-        if choice_result == "back":
-            break
+    options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
+    choice_result = display_menu_and_get_choice(options, username, public_key, private_key)
+    if choice_result == "back":
+        return
 
 
 # generate a key to encrypt
 def generate_key() : return Fernet.generate_key()
 
 # save key to a file
-def save_key(key):
+def save_key(key, filename="key.txt"):
     key_string = key.decode("utf-8")
-
     try:
-        with open("key.txt", "w") as key_file:
+        with open(filename, "w") as key_file:
             key_file.write(key_string)
     except Exception as e:
         print("Exception: " + str(e))
-        return False
+        return ""
     
-def read_key():
+def read_key(filename="key.txt"):
     try:
-        with open("key.txt", "r") as key_file:
+        with open(filename, "r") as key_file:
             key_string = key_file.read()
             return key_string
     except Exception as e:
         print("Exception: " + str(e))
-        return False
+        return ""
 
 def encrypt_private_key(encryption_key, private_key):
     if not isinstance(encryption_key, bytes):

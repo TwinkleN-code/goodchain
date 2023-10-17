@@ -1,9 +1,9 @@
 import sqlite3
 import re
 import getpass
-from keys import *
+from keys import encrypt_private_key, generate_keys, read_key
 from recover_key import generate_random_mnemonic
-from utils import print_header
+from utils import display_menu_and_get_choice, print_header
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD
 from storage import load_from_file
@@ -88,30 +88,35 @@ class User:
         # create keys
         user_private_key, user_public_key = generate_keys()
         database_key = read_key()
-        encrypted_private_key = encrypt_private_key(database_key, user_private_key)
+        if database_key != "":
+            encrypted_private_key = encrypt_private_key(database_key, user_private_key)
+        else: return
 
         # create mnemonic phrase
         phrase = generate_random_mnemonic()
         hashed_phrase = hashlib.sha256(phrase.encode()).hexdigest()
 
+        # reward user
+        self.current_user = username
+        self.reward_user()
+        
         try:
-            self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
-            print('\nRegistration successful')
-            print("\n**Important: Keep Your Recovery Key Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
-            print("\nRECOVERY KEY: " + phrase)
-
-            options = [{"option": "1", "text": "Go to profile", "action": lambda: "profile"}]
-
-            choice_result = display_menu_and_get_choice(options, username)
-
-            if choice_result == "profile":
-                print_header(username)
-                self.current_user = username
-                self.reward_user()
-                
+            self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))              
         except sqlite3.Error as e:
             print_header()
             print(f"Database error: {e}")
+            return
+        
+        print('\nRegistration successful')
+        print("\n**Important: Keep Your Recovery Key Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
+        print("\nRECOVERY KEY: " + phrase)
+
+        options = [{"option": "1", "text": "Go to profile", "action": lambda: "profile"}]
+        choice_result = display_menu_and_get_choice(options, username)
+
+        if choice_result == "profile":
+            print_header(username)
+            return
 
     def login(self):
         username = input('Enter your username: ').lower()
