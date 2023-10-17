@@ -141,16 +141,16 @@ class User:
     def change_username(self):
         new_username = input('Enter a new username: ').lower()
 
+        if not self.validate_username(new_username):
+            print_header(self.current_user)
+            print('Username must be between 3 and 32 characters and contain only letters and numbers')
+            return
+        
         if self.username_exists(new_username):
             print_header(self.current_user)
             print('Username is already taken')
             return
         
-        if not self.validate_username(new_username):
-            print_header(self.current_user)
-            print('Username must be between 3 and 32 characters and contain only letters and numbers')
-            return
-
         try:
             self.db.execute('UPDATE users SET username=? WHERE username=?', (new_username, self.current_user))
             print_header(new_username)
@@ -168,9 +168,7 @@ class User:
             print('Password must be between 8 and 32 characters and contain at least one lowercase letter, one uppercase letter, one number, and one special character')
             return
         
-        new_password = new_password
-        
-        retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (self.current_user, ))
+        retrieved_user = self.db.fetch('SELECT password FROM users WHERE username=?', (self.current_user, ))
 
         if self.verify_password(retrieved_user[0][0], new_password):
             print_header(self.current_user)
@@ -179,7 +177,7 @@ class User:
         
         confirm_password = getpass.getpass('Confirm password: ')
 
-        while new_password != confirm_password:
+        if new_password != confirm_password:
             print_header(self.current_user)
             print('Passwords do not match')
             return
