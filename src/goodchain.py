@@ -2,8 +2,8 @@ import os
 from auth import User
 from database import Database
 from keys import *
+from recover_key import recover_private_key
 from utils import print_header, display_menu_and_get_choice
-# from recover_key import recover_private_key
 
 user = User()
 db = Database()
@@ -31,10 +31,10 @@ def display_menu(is_logged_in):
         ]
     else:
         return [
-            # {"option": "1", "text": "Recover private key", "action": lambda: recover_private_key()},
             {"option": "1", "text": "Register", "action": lambda: user.register()},
             {"option": "2", "text": "Login", "action": lambda: user.login()},          
-            {"option": "3", "text": "Exit application", "action": lambda: "exit"}
+            {"option": "3", "text": "Recover private key", "action": lambda: recover_private_key()},
+            {"option": "4", "text": "Exit application", "action": lambda: "exit"}
         ]
 
 def main_menu():
