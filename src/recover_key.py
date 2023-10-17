@@ -1,8 +1,10 @@
 import hashlib
 import os
 import re
+import sqlite3
 from database import Database
 from keys import decrypt_private_key, read_key
+from utils import print_header
 
 def generate_random_mnemonic():
     # Make a word list
@@ -40,16 +42,32 @@ def recover_private_key():
 
     # if username exists
     if 3 <= len(username) <= 32 and re.search('^[a-zA-Z0-9]+$', username) is not None:
-        retrieve_username = db.fetch('SELECT username FROM users WHERE username=?', (username, ))
+        try:
+            retrieve_username = db.fetch('SELECT username FROM users WHERE username=?', (username, ))
+        except sqlite3.Error as e:
+            print_header(username)
+            print(f"Database error: {e}")
+
         if retrieve_username and retrieve_username[0][0] == username:
             # if phrase matches
             if is_valid_phrase(user_key):
-                get_hased_phrase = db.fetch('SELECT phrase FROM users WHERE username=?', (username, ))
+                try:
+                    get_hased_phrase = db.fetch('SELECT phrase FROM users WHERE username=?', (username, ))
+                except sqlite3.Error as e:
+                    print_header(username)
+                    print(f"Database error: {e}")
                 if get_hased_phrase and hashlib.sha256(user_key.encode()).hexdigest() == get_hased_phrase[0][0]:
-                    private_key = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
+                    try:
+                        private_key = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
+                    except sqlite3.Error as e:
+                        print_header(username)
+                        print(f"Database error: {e}")
                     db_key= read_key()
-                    decrypted_private_key = decrypt_private_key(db_key, private_key[0][0])
-                    print(f"\nYour private key is: \n{decrypted_private_key}")
+                    if db_key != "":
+                        decrypted_private_key = decrypt_private_key(db_key, private_key[0][0])
+                        print(f"\nYour private key is: \n{decrypted_private_key}")
+                    else:
+                        print("Private key not found")
                     return            
     print('Invalid username or key')
             
