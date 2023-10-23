@@ -1,7 +1,7 @@
 import sqlite3
 import re
 import getpass
-from keys import encrypt_private_key, generate_keys, read_key
+from keys import encrypt_private_key, generate_keys, get_private_key, read_key
 from recover_key import generate_random_mnemonic
 from utils import display_menu_and_get_choice, print_header
 from database import Database
@@ -226,46 +226,62 @@ class User:
             for tx in transactions:
                 print(tx)
 
-    # def send_coins(self):
-    #     recipient = input('Enter the recipient: ').lower()
-    #     amount = input('Enter the amount: ')
+    def transfer_coins(self):
+        amount_to_transfer = input("Enter number of coins to send: ")
+        receiver_username = input("Enter the receiver's username: ").replace(" ", "").lower()
+        transaction_fee = input("Enter transaction fee: ")
 
-    #     try:
-    #         amount = int(amount)
-    #     except ValueError:
-    #         print_header(self.current_user)
-    #         print('Invalid amount')
-    #         return
-
-    #     if amount <= 0:
-    #         print_header(self.current_user)
-    #         print('Invalid amount')
-    #         return
-
-    #     if recipient == self.current_user:
-    #         print_header(self.current_user)
-    #         print("You can't send coins to yourself")
-    #         return
-
-    #     balance = 0
-    #     for tx in transaction_pool.get_transactions():
-    #         for output_addr, tx_amount in tx.outputs:
-    #             if output_addr == self.current_user:
-    #                 balance += tx_amount
-    #         for input_addr, tx_amount in tx.inputs:
-    #             if input_addr == self.current_user:
-    #                 balance -= tx_amount
+        options = [{"option": "1", "text": "Confirm transaction", "action": lambda: "confirm"},
+                {"option": "2", "text": "Back to main menu", "action": lambda: "back"}]
+        choice_result = display_menu_and_get_choice(options)
+        if choice_result == "back":
+            return
         
-    #     if balance < amount:
-    #         print_header(self.current_user)
-    #         print('Insufficient funds')
-    #         return
+        try: 
+            amount_to_transfer = float(amount_to_transfer)
+            transaction_fee = float(transaction_fee)
+        except ValueError:
+            print_header()
+            print("Invalid input")
+            return
+        
+        # check if username is current user
+        if receiver_username == self.current_user:
+            print_header()
+            print("Cannot send coins to yourself")
+            return
+        
+        # amount should be > 0
+        if amount_to_transfer <= 0:
+            print_header()
+            print('Invalid amount')
+            return
+        
+        # check if enough balance
+        transactions = load_from_file()
+        balance = self.calculate_balance(self.current_user, transactions)
+        if balance < amount_to_transfer + transaction_fee:
+            print_header()
+            print("Insufficient balance")
+            return
 
-    #     transaction = Transaction()
-    #     transaction.add_input(self.current_user, amount)
-    #     transaction.add_output(recipient, amount)
-    #     transaction.sign(self.current_user)
-    #     transaction_pool.add_transaction(transaction)
+        # check if receiver exists
+        if not self.username_exists(receiver_username):
+            print_header()
+            print('Receiver does not exists.')
+            return
+            
+        # make the transaction
+        transaction = Transaction()
+        transaction.add_input(self.current_user, amount_to_transfer)
+        transaction.add_output(receiver_username,amount_to_transfer)
 
-    #     print_header(self.current_user)
-    #     print('Transaction successful')
+        # sign transaction
+        private_key = get_private_key(self.current_user)
+        transaction.sign(private_key)
+
+        # add to the pool
+        transaction_pool.add_transaction(transaction)
+
+        print_header(self.current_user)
+        print('Transaction successful')

@@ -65,25 +65,33 @@ def view_user_keys(username):
     get_pb = get_pb[0][0]
     public_key = f"\nPublic Key: \n{get_pb}"
 
-    # get private key and decrypt it
-    try:
-        get_pr = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
-    except sqlite3.Error as e:
-            print_header(username)
-            print(f"Database error: {e}")
-
-    db_key = read_key()
-    if db_key != "":
-        decrypted = decrypt_private_key(db_key, get_pr[0][0])
-        private_key = f"Private Key: \n{str(decrypted)}"
+    # get private key
+    get_key = get_private_key(username)
+    private_key = ""
+    if get_key != "":
+        private_key = f"Private Key: \n{str(get_key)}"
     else:
-        print("Key not found")
+        print("Could not find key")
 
     options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
     choice_result = display_menu_and_get_choice(options, username, public_key, private_key)
     if choice_result == "back":
         return
 
+# get private key
+def get_private_key(username):
+    db = Database()
+    try:
+        get_pr = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
+    except sqlite3.Error as e:
+        print_header(username)
+        print(f"Database error: {e}")
+
+    db_key = read_key()
+    if db_key != "":
+        return decrypt_private_key(db_key, get_pr[0][0])
+    else:
+        return ""
 
 # generate a key to encrypt
 def generate_key() : return Fernet.generate_key()
