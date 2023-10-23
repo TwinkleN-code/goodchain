@@ -3,7 +3,7 @@ import re
 import getpass
 from keys import encrypt_private_key, generate_keys, get_private_key, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
-from utils import display_menu_and_get_choice, print_header
+from utils import display_menu_and_get_choice, print_header, get_current_user_public_key
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file
@@ -106,6 +106,7 @@ class User:
         # reward user
         self.current_user = username
         self.reward_user()
+        print_header(username)
         
         print('\nRegistration successful')
         print("\n**Important: Keep Your Recovery Key Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
@@ -191,36 +192,40 @@ class User:
         except sqlite3.Error as e:
             print_header(self.current_user)
             print(f"Database error: {e}")
-
+    
     def reward_user(self):
         decrypted_private_key = fetch_decrypted_private_key(self.current_user)
+        public_key = get_current_user_public_key(self.current_user)
         reward_transaction = Transaction(type=REWARD)
 
         # Since it's a reward, there are no inputs. 
-        reward_transaction.add_output(self.current_user, REWARD_VALUE)
+        reward_transaction.add_output(public_key, REWARD_VALUE)
         reward_transaction.sign(decrypted_private_key)
 
         transaction_pool.add_transaction(reward_transaction)
 
     def view_balance(self):
-        transactions = load_from_file()
-        user_balance = self.calculate_balance(self.current_user, transactions)
+        transactions = load_from_file("transactions.dat")
+        public_key = get_current_user_public_key(self.current_user)
+        user_balance = self.calculate_balance(public_key, transactions)
         print_header(self.current_user)
         print(f"Balance for {self.current_user}: {user_balance} coins.")
 
     def calculate_balance(self, user, transactions):
         balance = 0
         for tx in transactions:
-            for output_addr, tx_amount in tx.outputs:
+            if tx.output:
+                output_addr, tx_amount = tx.output
                 if output_addr == user:
                     balance += tx_amount
-            for input_addr, tx_amount in tx.inputs:
+            if tx.input:
+                input_addr, tx_amount = tx.input
                 if input_addr == user:
                     balance -= tx_amount
         return balance
     
     def view_transactions(self):
-        transactions = load_from_file()
+        transactions = load_from_file("transactions.dat")
 
         if not transactions:
             print_header(self.current_user)
