@@ -63,7 +63,7 @@ def view_user_keys(username):
             print(f"Database error: {e}")
 
     get_pb = get_pb[0][0]
-    public_key = f"\nPublic Key: \n{get_pb}"
+    public_key = f"\nPublic Key: \n{get_pb} \n"
 
     # get private key and decrypt it
     try:
