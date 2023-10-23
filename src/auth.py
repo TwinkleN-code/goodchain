@@ -193,12 +193,13 @@ class User:
             print(f"Database error: {e}")
 
     def reward_user(self):
+        decrypted_private_key = fetch_decrypted_private_key(self.current_user)
         reward_transaction = Transaction(type=REWARD)
 
         # Since it's a reward, there are no inputs. 
         reward_transaction.add_output(self.current_user, REWARD_VALUE)
+        reward_transaction.sign(decrypted_private_key)
 
-        # No need to sign REWARD transactions as they have their own validity checks
         transaction_pool.add_transaction(reward_transaction)
 
     def view_balance(self):
