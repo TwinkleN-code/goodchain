@@ -45,7 +45,7 @@ def recover_private_key():
         try:
             retrieve_username = db.fetch('SELECT username FROM users WHERE username=?', (username, ))
         except sqlite3.Error as e:
-            print_header(username)
+            print_header()
             print(f"Database error: {e}")
 
         if retrieve_username and retrieve_username[0][0] == username:
@@ -54,21 +54,28 @@ def recover_private_key():
                 try:
                     get_hased_phrase = db.fetch('SELECT phrase FROM users WHERE username=?', (username, ))
                 except sqlite3.Error as e:
-                    print_header(username)
+                    print_header()
                     print(f"Database error: {e}")
                 if get_hased_phrase and hashlib.sha256(user_key.encode()).hexdigest() == get_hased_phrase[0][0]:
                     try:
                         private_key = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
                     except sqlite3.Error as e:
-                        print_header(username)
+                        print_header()
+                        print_header()
                         print(f"Database error: {e}")
                     db_key= read_key()
                     if db_key != "":
                         decrypted_private_key = decrypt_private_key(db_key, private_key[0][0])
-                        print(f"\nYour private key is: \n{decrypted_private_key}")
+                        if isinstance(decrypted_private_key, bytes):
+                            decrypted_private_key = decrypted_private_key.decode('utf-8')
+                        cleaned_private_key = decrypted_private_key.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
+                        print_header()
+                        print(f"\nYour private key is: \n{cleaned_private_key}")
                     else:
+                        print_header()
                         print("Private key not found")
-                    return            
+                    return        
+    print_header()    
     print('Invalid username or key')
             
 

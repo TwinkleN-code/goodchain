@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from database import Database
 from cryptography.fernet import Fernet
-from utils import print_header, display_menu_and_get_choice
+from utils import print_header, display_menu_and_get_choice, load_private_key_from_string
 
 
 def generate_keys():
@@ -12,12 +12,12 @@ def generate_keys():
 
     pbc_ser = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo).decode("utf-8").replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").strip()
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
     
     pr_ser = private_key.private_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()).decode("utf-8").replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
+    encryption_algorithm=serialization.NoEncryption())
 
     return pr_ser, pbc_ser
 
@@ -63,7 +63,10 @@ def view_user_keys(username):
             print(f"Database error: {e}")
 
     get_pb = get_pb[0][0]
-    public_key = f"\nPublic Key: \n{get_pb}"
+    if isinstance(get_pb, bytes):
+        get_pb = get_pb.decode('utf-8')
+    cleaned_public_key = get_pb.replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").strip()
+    public_key = f"\nPublic Key: \n{cleaned_public_key} \n"
 
     # get private key
     get_key = get_private_key(username)

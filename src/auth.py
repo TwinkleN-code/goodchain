@@ -1,11 +1,11 @@
 import sqlite3
 import re
 import getpass
-from keys import encrypt_private_key, generate_keys, get_private_key, read_key
+from keys import encrypt_private_key, generate_keys, get_private_key, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
 from utils import display_menu_and_get_choice, print_header
 from database import Database
-from transaction import transaction_pool, Transaction, REWARD
+from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file
 import hashlib
 
@@ -95,10 +95,6 @@ class User:
         # create mnemonic phrase
         phrase = generate_random_mnemonic()
         hashed_phrase = hashlib.sha256(phrase.encode()).hexdigest()
-
-        # reward user
-        self.current_user = username
-        self.reward_user()
         
         try:
             self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))              
@@ -106,6 +102,10 @@ class User:
             print_header()
             print(f"Database error: {e}")
             return
+        
+        # reward user
+        self.current_user = username
+        self.reward_user()
         
         print('\nRegistration successful')
         print("\n**Important: Keep Your Recovery Key Safe** \n- Write it down and keep it offline. \n- Use this phrase to recover your private key \n- Never share it. Losing it can lead to permanent loss of your funds.")
@@ -193,9 +193,14 @@ class User:
             print(f"Database error: {e}")
 
     def reward_user(self):
-        initial_transaction = Transaction(REWARD)
-        initial_transaction.add_output(self.current_user, 50)
-        transaction_pool.add_transaction(initial_transaction)
+        decrypted_private_key = fetch_decrypted_private_key(self.current_user)
+        reward_transaction = Transaction(type=REWARD)
+
+        # Since it's a reward, there are no inputs. 
+        reward_transaction.add_output(self.current_user, REWARD_VALUE)
+        reward_transaction.sign(decrypted_private_key)
+
+        transaction_pool.add_transaction(reward_transaction)
 
     def view_balance(self):
         transactions = load_from_file()

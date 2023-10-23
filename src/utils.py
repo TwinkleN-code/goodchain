@@ -3,6 +3,7 @@ from cryptography.exceptions import *
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -45,13 +46,20 @@ def print_header(username=None):
     print(header)
     print("")
 
+def load_private_key_from_string(private_key_string):
+    private_key_bytes = private_key_string.encode("utf-8")
+    private_key = serialization.load_pem_private_key(
+        private_key_bytes,
+        password=None,
+    )
+    return private_key
+
 
 def sign(message, private_key):
     message = bytes(str(message), 'utf-8')
     signature = private_key.sign(
         message,
-        padding.PSS(mgf=padding.MGF1(hashes.SHA256()), salt_length=padding.PSS.MAX_LENGTH),
-        hashes.SHA256()
+        ec.ECDSA(hashes.SHA256())
         )
     return signature
 
@@ -62,9 +70,7 @@ def verify(message, signature, pbc_ser):
         public_key.verify(
             signature,
             message,
-            padding.PSS(mgf=padding.MGF1(hashes.SHA256()),
-            salt_length=padding.PSS.MAX_LENGTH),
-            hashes.SHA256()
+            ec.ECDSA(hashes.SHA256())
             )
         return True
     except InvalidSignature:

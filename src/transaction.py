@@ -81,7 +81,7 @@ class Transaction:
         reqd_str = "\n".join(str(addr) for addr in self.reqd)
         sigs_str = "\n".join(str(sig) for sig in self.sigs)
         
-        return (f"INPUTS:\n{inputs_str}"
+        return (f"INPUTS:\n{inputs_str} \n"
                 f"OUTPUTS:\n{outputs_str} \n"
                 f"EXTRA REQUIRED SIGNATURES:\n{reqd_str}"
                 f"SIGNATURES:\n{sigs_str}"
