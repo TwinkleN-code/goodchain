@@ -3,7 +3,7 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import ec, padding
 from database import Database
 from cryptography.fernet import Fernet
-from utils import print_header, display_menu_and_get_choice
+from utils import print_header, display_menu_and_get_choice, load_private_key_from_string
 
 
 def generate_keys():
@@ -12,12 +12,12 @@ def generate_keys():
 
     pbc_ser = public_key.public_bytes(
         encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo).decode("utf-8").replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").strip()
+        format=serialization.PublicFormat.SubjectPublicKeyInfo)
     
     pr_ser = private_key.private_bytes(
     encoding=serialization.Encoding.PEM,
     format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()).decode("utf-8").replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
+    encryption_algorithm=serialization.NoEncryption())
 
     return pr_ser, pbc_ser
 
@@ -63,7 +63,10 @@ def view_user_keys(username):
             print(f"Database error: {e}")
 
     get_pb = get_pb[0][0]
-    public_key = f"\nPublic Key: \n{get_pb} \n"
+    if isinstance(get_pb, bytes):
+        get_pb = get_pb.decode('utf-8')
+    cleaned_public_key = get_pb.replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").strip()
+    public_key = f"\nPublic Key: \n{cleaned_public_key} \n"
 
     # get private key and decrypt it
     try:
@@ -75,7 +78,10 @@ def view_user_keys(username):
     db_key = read_key()
     if db_key != "":
         decrypted = decrypt_private_key(db_key, get_pr[0][0])
-        private_key = f"Private Key: \n{str(decrypted)}"
+        if isinstance(decrypted, bytes):
+            decrypted = decrypted.decode('utf-8')
+        cleaned_private_key = decrypted.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
+        private_key = f"Private Key: \n{cleaned_private_key}"
     else:
         print("Key not found")
 
@@ -84,6 +90,42 @@ def view_user_keys(username):
     if choice_result == "back":
         return
 
+def fetch_decrypted_private_key(username):
+    """
+    Fetches and decrypts the private key for the given username from the database.
+    
+    Parameters:
+    - username (str): The username for which the private key should be fetched.
+    
+    Returns:
+    - str: Decrypted private key for the provided username.
+    """
+    # Initialize database connection
+    db = Database()
+
+    # Fetch encrypted private key from database
+    try:
+        result = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
+        if not result or len(result) == 0:
+            print(f"No private key found for username: {username}")
+            return None
+        encrypted_private_key = result[0][0]
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    # Read the decryption key from file
+    db_key = read_key()
+    if db_key == "":
+        print("Decryption key not found")
+        return None
+
+    # Decrypt the private key
+    decrypted_private_key = decrypt_private_key(db_key, encrypted_private_key)
+
+    serialised_private_key = load_private_key_from_string(decrypted_private_key)
+
+    return serialised_private_key
 
 # generate a key to encrypt
 def generate_key() : return Fernet.generate_key()

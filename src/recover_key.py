@@ -66,8 +66,11 @@ def recover_private_key():
                     db_key= read_key()
                     if db_key != "":
                         decrypted_private_key = decrypt_private_key(db_key, private_key[0][0])
+                        if isinstance(decrypted_private_key, bytes):
+                            decrypted_private_key = decrypted_private_key.decode('utf-8')
+                        cleaned_private_key = decrypted_private_key.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
                         print_header()
-                        print(f"\nYour private key is: \n{decrypted_private_key}")
+                        print(f"\nYour private key is: \n{cleaned_private_key}")
                     else:
                         print_header()
                         print("Private key not found")
