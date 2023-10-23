@@ -203,7 +203,7 @@ class User:
         transaction_pool.add_transaction(reward_transaction)
 
     def view_balance(self):
-        transactions = load_from_file()
+        transactions = load_from_file("transactions.dat")
         user_balance = self.calculate_balance(self.current_user, transactions)
         print_header(self.current_user)
         print(f"Balance for {self.current_user}: {user_balance} coins.")
@@ -211,16 +211,18 @@ class User:
     def calculate_balance(self, user, transactions):
         balance = 0
         for tx in transactions:
-            for output_addr, tx_amount in tx.outputs:
+            if tx.output:
+                output_addr, tx_amount = tx.output
                 if output_addr == user:
                     balance += tx_amount
-            for input_addr, tx_amount in tx.inputs:
+            if tx.input:
+                input_addr, tx_amount = tx.input
                 if input_addr == user:
                     balance -= tx_amount
         return balance
     
     def view_transactions(self):
-        transactions = load_from_file()
+        transactions = load_from_file("transactions.dat")
 
         if not transactions:
             print_header(self.current_user)
