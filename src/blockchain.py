@@ -4,6 +4,7 @@
 # from transaction import REWARD_VALUE, REWARD, Transaction, transaction_pool
 # from keys import fetch_decrypted_private_key
 # from storage import load_from_file
+# from utils import get_current_user_public_key, print_header
 
 # class Block:
 #     def __init__(self, transactions, previous_hash, nonce=0):
@@ -88,22 +89,22 @@
 #         transactions = load_from_file()
 #         # We take the first 5-10 transactions from the pool
 #         if len(transactions) < 5:
+#             print_header(username)
 #             print("Not enough transactions to mine.")
 #             return
 
-#         num_transactions = min(10, len(self.transaction_pool))
-#         transactions_for_block = self.transaction_pool[:num_transactions]
-
 #         # Add a reward transaction for the miner
 #         decrypted_private_key = fetch_decrypted_private_key(username)
+#         public_key = get_current_user_public_key(username)
 #         reward_transaction = Transaction(type = REWARD)
 #         # Since it's a reward, there are no inputs. 
-#         reward_transaction.add_output(username, REWARD_VALUE)
+#         reward_transaction.add_output(public_key, REWARD_VALUE)
 #         reward_transaction.sign(decrypted_private_key)
         
 #         transaction_pool.add_transaction(reward_transaction)
-        
 
+#         transactions = load_from_file()
+        
 #         # Create a new block with the transactions and mine it
 #         new_block = Block(transactions_for_block, self.chain[-1].hash)
 #         new_block.mine(self.difficulty)

@@ -4,6 +4,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
+from database import Database
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -53,6 +54,16 @@ def load_private_key_from_string(private_key_string):
         password=None,
     )
     return private_key
+
+def get_current_user_public_key(username):
+    db = Database()
+    if not username:
+        return None
+
+    user_data = db.fetch('SELECT publickey FROM users WHERE username=?', (username, ))
+    if user_data:
+        return user_data[0][0]
+    return None
 
 
 def sign(message, private_key):
