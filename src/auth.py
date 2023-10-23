@@ -1,7 +1,7 @@
 import sqlite3
 import re
 import getpass
-from keys import encrypt_private_key, generate_keys, get_private_key, read_key, fetch_decrypted_private_key
+from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
 from utils import display_menu_and_get_choice, print_header, get_current_user_public_key
 from database import Database
@@ -211,16 +211,16 @@ class User:
         print_header(self.current_user)
         print(f"Balance for {self.current_user}: {user_balance} coins.")
 
-    def calculate_balance(self, user, transactions):
+    def calculate_balance(self, user_public_key, transactions):
         balance = 0
         for tx in transactions:
             if tx.output:
                 output_addr, tx_amount = tx.output
-                if output_addr == user:
+                if output_addr == user_public_key:
                     balance += tx_amount
             if tx.input:
                 input_addr, tx_amount = tx.input
-                if input_addr == user:
+                if input_addr == user_public_key:
                     balance -= tx_amount
         return balance
     
@@ -260,16 +260,16 @@ class User:
             print_header()
             print("Cannot send coins to yourself")
             return
-        
-        # amount should be > 0
+
         if amount_to_transfer <= 0:
             print_header()
             print('Invalid amount')
             return
         
         # check if enough balance
-        transactions = load_from_file()
-        balance = self.calculate_balance(self.current_user, transactions)
+        transactions = load_from_file("transactions.dat")
+        public_key = get_current_user_public_key(self.current_user)
+        balance = self.calculate_balance(public_key, transactions)
         if balance < amount_to_transfer + transaction_fee:
             print_header()
             print("Insufficient balance")
@@ -280,15 +280,22 @@ class User:
             print_header()
             print('Receiver does not exists.')
             return
-            
+  
         # make the transaction
-        transaction = Transaction()
-        transaction.add_input(self.current_user, amount_to_transfer)
-        transaction.add_output(receiver_username,amount_to_transfer)
+        transaction = Transaction(0, transaction_fee)
+        private_key = fetch_decrypted_private_key(self.current_user)
+        public_key_receiver = get_current_user_public_key(receiver_username)
+        transaction.add_input(public_key, amount_to_transfer)
+        transaction.add_output(public_key_receiver,amount_to_transfer)
 
-        # sign transaction
-        private_key = get_private_key(self.current_user)
+        # sign transaction   
         transaction.sign(private_key)
+
+        # check if transaction is valid
+        if not transaction.is_valid():
+            print_header(self.current_user)
+            print("Invalid transaction")
+            return
 
         # add to the pool
         transaction_pool.add_transaction(transaction)

@@ -68,33 +68,64 @@ def view_user_keys(username):
     cleaned_public_key = get_pb.replace("-----BEGIN PUBLIC KEY-----", "").replace("-----END PUBLIC KEY-----", "").strip()
     public_key = f"\nPublic Key: \n{cleaned_public_key} \n"
 
-    # get private key
-    get_key = get_private_key(username)
-    private_key = ""
-    if get_key != "":
-        private_key = f"Private Key: \n{str(get_key)}"
+    # get private key and decrypt it
+    try:
+        get_pr = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
+    except sqlite3.Error as e:
+            print_header(username)
+            print(f"Database error: {e}")
+
+    db_key = read_key()
+    if db_key != "":
+        decrypted = decrypt_private_key(db_key, get_pr[0][0])
+        if isinstance(decrypted, bytes):
+            decrypted = decrypted.decode('utf-8')
+        cleaned_private_key = decrypted.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
+        private_key = f"Private Key: \n{cleaned_private_key}"
     else:
-        print("Could not find key")
+        print("Key not found")
 
     options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
     choice_result = display_menu_and_get_choice(options, username, public_key, private_key)
     if choice_result == "back":
         return
 
-# get private key
-def get_private_key(username):
+def fetch_decrypted_private_key(username):
+    """
+    Fetches and decrypts the private key for the given username from the database.
+    
+    Parameters:
+    - username (str): The username for which the private key should be fetched.
+    
+    Returns:
+    - str: Decrypted private key for the provided username.
+    """
+    # Initialize database connection
     db = Database()
-    try:
-        get_pr = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
-    except sqlite3.Error as e:
-        print_header(username)
-        print(f"Database error: {e}")
 
+    # Fetch encrypted private key from database
+    try:
+        result = db.fetch('SELECT privatekey FROM users WHERE username=?', (username, ))
+        if not result or len(result) == 0:
+            print(f"No private key found for username: {username}")
+            return None
+        encrypted_private_key = result[0][0]
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+
+    # Read the decryption key from file
     db_key = read_key()
-    if db_key != "":
-        return decrypt_private_key(db_key, get_pr[0][0])
-    else:
-        return ""
+    if db_key == "":
+        print("Decryption key not found")
+        return None
+
+    # Decrypt the private key
+    decrypted_private_key = decrypt_private_key(db_key, encrypted_private_key)
+
+    serialised_private_key = load_private_key_from_string(decrypted_private_key)
+
+    return serialised_private_key
 
 # generate a key to encrypt
 def generate_key() : return Fernet.generate_key()
