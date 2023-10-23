@@ -14,3 +14,4 @@ def load_from_file(filename):
     except (FileNotFoundError, EOFError, pickle.UnpicklingError, ValueError) as e:
         print(f"Error loading from {filename}: {e}")
         return []
+    

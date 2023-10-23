@@ -57,7 +57,7 @@ class Transaction:
         total_out = self.output[1] if self.output[1] >= 0 else 0
 
         # Ensure that the sum of inputs matches the sum of outputs
-        if total_out != total_in + self.fee:
+        if total_out != total_in:
             return False
         
         # Check if the signature is valid for the given input address
