@@ -192,19 +192,30 @@ class User:
             print_header(self.current_user)
             print(f"Database error: {e}")
 
+    def get_current_user_public_key(self):
+        if not self.current_user:
+            return None
+
+        user_data = self.db.fetch('SELECT publickey FROM users WHERE username=?', (self.current_user,))
+        if user_data:
+            return user_data[0][0]
+        return None
+    
     def reward_user(self):
         decrypted_private_key = fetch_decrypted_private_key(self.current_user)
+        public_key = self.get_current_user_public_key()
         reward_transaction = Transaction(type=REWARD)
 
         # Since it's a reward, there are no inputs. 
-        reward_transaction.add_output(self.current_user, REWARD_VALUE)
+        reward_transaction.add_output(public_key, REWARD_VALUE)
         reward_transaction.sign(decrypted_private_key)
 
         transaction_pool.add_transaction(reward_transaction)
 
     def view_balance(self):
         transactions = load_from_file("transactions.dat")
-        user_balance = self.calculate_balance(self.current_user, transactions)
+        public_key = self.get_current_user_public_key()
+        user_balance = self.calculate_balance(public_key, transactions)
         print_header(self.current_user)
         print(f"Balance for {self.current_user}: {user_balance} coins.")
 
