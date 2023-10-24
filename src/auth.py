@@ -1,9 +1,9 @@
 import sqlite3
 import re
 import getpass
-from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
+from keys import encrypt, encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
-from utils import display_menu_and_get_choice, print_header, get_current_user_public_key
+from utils import display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file
@@ -302,3 +302,21 @@ class User:
 
         print_header(self.current_user)
         print('Transaction successful')
+
+    def remove_transaction(self):
+        # show all user transactions from the pool
+        transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
+        options = []
+        print("Pending transactions: ")
+        for tx in transactions:
+            options.append({"option": str(tx[0]), "text": f"{tx[1]} to {tx[2]} with {tx[3]} transaction fee", "action": lambda: tx[0]})
+
+        options.append({"option": f"{len(transactions)+1}", "text": "Back to main menu", "action": lambda: "back"})
+        choice_result = display_menu_and_get_choice(options)
+        if choice_result == "back":
+            return
+        else:
+            # delete from pool
+            index = find_index_from_file("transactions.dat", transactions[choice_result-1][1], get_current_user_public_key(self.current_user), get_current_user_public_key(transactions[choice_result-1][2]), transactions[choice_result-1][3])
+            remove_from_file("transactions.dat", index)
+            return

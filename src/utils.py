@@ -5,6 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
+from storage import load_from_file, save_to_file
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -89,3 +90,47 @@ def verify(message, signature, pbc_ser):
     except:
         print("Error executing 'public_key.verify'")
         return False
+    
+def find_index_from_file(filename, input, public_key_sender, public_key_receiver, fee):
+    # Load all data from the file
+    all_data = load_from_file(filename)
+
+    # Find the index of the data that contains the target_input
+    index = 0
+    for tx in all_data:
+        if tx.type == 0 and tx.input[1] == input and tx.input[0] == public_key_sender and tx.output[0] == public_key_receiver and tx.fee == fee:
+            return index
+        index += 1
+        # if tx.type == 0:
+        #     print(tx.input[0] == public_key_sender)
+
+    return None
+
+def get_user_transactions(filename, current_user):
+    public_key = get_current_user_public_key(current_user)
+    all_data = load_from_file(filename)
+    db = Database()
+    user_transactions = []
+    count=1
+    for tx in all_data:
+        if tx.type == 0:
+            if tx.input[0] == public_key:
+                get_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                user_transactions.append([count, tx.input[1], get_username[0][0], tx.fee])
+                count += 1
+
+    return user_transactions
+
+def remove_from_file(filename, index):
+    # Load all data from the file
+    all_data = load_from_file(filename)
+
+    # Check if the index is valid
+    if 0 <= index < len(all_data):
+        # Delete the entry 
+        del all_data[index]
+        # Save the modified data back to the file
+        save_to_file(all_data, filename)
+        print("Transaction removed")
+    else:
+        print("Could not remove transaction")
