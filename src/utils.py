@@ -101,9 +101,6 @@ def find_index_from_file(filename, input, public_key_sender, public_key_receiver
         if tx.type == 0 and tx.input[1] == input and tx.input[0] == public_key_sender and tx.output[0] == public_key_receiver and tx.fee == fee:
             return index
         index += 1
-        # if tx.type == 0:
-        #     print(tx.input[0] == public_key_sender)
-
     return None
 
 def get_user_transactions(filename, current_user):
@@ -131,6 +128,6 @@ def remove_from_file(filename, index):
         del all_data[index]
         # Save the modified data back to the file
         save_to_file(all_data, filename)
-        print("Transaction removed")
-    else:
-        print("Could not remove transaction")
+        return True
+    return False
+        
