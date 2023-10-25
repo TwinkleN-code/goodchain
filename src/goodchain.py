@@ -26,8 +26,10 @@ def display_menu(is_logged_in):
             {"option": "3", "text": "Account Settings", "action": lambda: settings_menu()},
             {"option": "4", "text": "View balance", "action": lambda: user.view_balance()},           
             {"option": "5", "text": "View transactions", "action": lambda: user.view_transactions()},
-            {"option": "6", "text": "Logout", "action": lambda: user.logout()},
-            {"option": "7", "text": "Exit application", "action": lambda: "exit"}
+            {"option": "6", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
+            {"option": "7", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},
+            {"option": "8", "text": "Logout", "action": lambda: user.logout()},
+            {"option": "9", "text": "Exit application", "action": lambda: "exit"}
         ]
     else:
         return [
