@@ -5,6 +5,7 @@ from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
 from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key
+import os
 
 class Block:
     def __init__(self, transactions, previous_hash, nonce=0):
@@ -42,6 +43,7 @@ class Blockchain:
         self.chain = [self.create_genesis_block()]
         self.difficulty = 5  # This can be adjusted based on your desired mining difficulty.
         self.mining_reward = REWARD_VALUE  # This is the reward a miner gets for mining a block.
+        self.last_mined_timestamp = self._load_last_mined_timestamp() # This is the timestamp of the last mined block.
 
     def create_genesis_block(self):
         # A function to generate genesis block and append it to the chain.
@@ -57,6 +59,16 @@ class Blockchain:
         blocks = load_from_file("blockchain.dat")
         blocks.append(block)
         save_to_file(blocks, "blockchain.dat")
+        save_to_file(self.last_mined_timestamp, "last_mined_timestamp.dat")
+
+    def _load_last_mined_timestamp(self):
+        # Check if the file exists
+        if os.path.exists("last_mined_timestamp.dat"):
+            # Load the last mined timestamp from the file
+            return load_from_file("last_mined_timestamp.dat")[0]
+        else:
+            # If the file does not exist, return a default value of 0
+            return 0
         
     def is_valid(self):
         # Check for genesis block
@@ -103,6 +115,13 @@ class Blockchain:
         return True
 
     def mine_transactions(self, username):
+        current_timestamp = time.time()
+        time_since_last_mine = current_timestamp - self.last_mined_timestamp
+        if time_since_last_mine < 180:  # 180 seconds = 3 minutes
+            print_header(username)
+            print(f"Too soon to mine again. Please wait {180 - time_since_last_mine:.0f} more seconds.")
+            return
+
         transactions = load_from_file("transactions.dat")
         # We take the first 5-10 transactions from the pool
         if len(transactions) < 5:
@@ -123,6 +142,7 @@ class Blockchain:
         # Create a new block with the transactions and mine it
         new_block = Block(transactions, self.chain[-1].hash)
         new_block.mine(self.difficulty, username)
+        self.last_mined_timestamp = time.time()
 
         print(f"Block mined with hash: {new_block.hash}")
 
