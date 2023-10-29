@@ -20,6 +20,8 @@ class Block:
         return digest.finalize().hex()
 
     def mine(self, difficulty, username):
+        print_header(username)
+        print(f"Mining...")
         pattern = '0' * difficulty
         start_time = time.time()
         while True:
@@ -126,9 +128,6 @@ class Blockchain:
 
         # Add the new block to the blockchain
         self.add_block(new_block)
-
-        # Save the blockchain to file
-        save_to_file(self.chain, "blockchain.dat")
 
         # Update the transaction pool by removing included transactions
         indices_to_remove = []
