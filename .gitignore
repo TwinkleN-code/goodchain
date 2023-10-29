@@ -165,3 +165,4 @@ myenv/
 /.ds_store
 transactions.dat
 key.txt
+blockchain.dat

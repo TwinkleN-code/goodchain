@@ -19,7 +19,7 @@ class Block:
         digest.update(bytes(str(self.timestamp) + str(self.transactions) + str(self.previous_hash) + str(self.nonce), 'utf8'))
         return digest.finalize().hex()
 
-    def mine(self, difficulty):
+    def mine(self, difficulty, username):
         pattern = '0' * difficulty
         start_time = time.time()
         while True:
@@ -28,6 +28,7 @@ class Block:
                 break
             self.nonce += 1
         end_time = time.time()
+        print_header(username)
         print(f"Block mined in {end_time - start_time} seconds.")
 
     def __repr__(self):
@@ -37,7 +38,7 @@ class Block:
 class Blockchain:
     def __init__(self):
         self.chain = [self.create_genesis_block()]
-        self.difficulty = 4  # This can be adjusted based on your desired mining difficulty.
+        self.difficulty = 5  # This can be adjusted based on your desired mining difficulty.
         self.mining_reward = REWARD_VALUE  # This is the reward a miner gets for mining a block.
 
     def create_genesis_block(self):
@@ -119,7 +120,7 @@ class Blockchain:
         
         # Create a new block with the transactions and mine it
         new_block = Block(transactions, self.chain[-1].hash)
-        new_block.mine(self.difficulty)
+        new_block.mine(self.difficulty, username)
 
         print(f"Block mined with hash: {new_block.hash}")
 
@@ -138,18 +139,18 @@ class Blockchain:
                 public_key_receiver = tx.output[0]
                 fee = tx.fee
 
-                index = find_index_from_file("transaction.dat", amount, public_key_sender, public_key_receiver, fee)
+                index = find_index_from_file("transactions.dat", amount, public_key_sender, public_key_receiver, fee)
                 if index is not None:
                     indices_to_remove.append(index)
             else:
                 public_key_receiver = tx.output[0]
-                index = find_index_from_file_by_public_key("transaction.dat", public_key_receiver)
+                index = find_index_from_file_by_public_key("transactions.dat", public_key_receiver)
                 if index is not None:
                     indices_to_remove.append(index)
     
         # Remove transactions in reverse order to maintain correct indices
         for index in sorted(indices_to_remove, reverse=True):
-            remove_from_file("transaction.dat", index)
+            remove_from_file("transactions.dat", index)
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")
