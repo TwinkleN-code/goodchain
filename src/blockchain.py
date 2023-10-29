@@ -123,7 +123,7 @@ class Blockchain:
             return
 
         transactions = load_from_file("transactions.dat")
-        # Have to have 5 transactions to mine (4 transactions + mining reward)
+        # Need to have 5 transactions to mine (4 transactions + mining reward)
         if len(transactions) < 4:
             print_header(username)
             print("Not enough transactions to mine.")
