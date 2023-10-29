@@ -357,9 +357,10 @@ class User:
             return
 
     def transaction_edit_menu(self, transactions, tx_choice):
-        options = [{"option": "1", "text": "Edit receiver's username", "action": lambda: 1},
-            {"option": "2", "text": "Edit transaction fee", "action": lambda: 2},
-            {"option": "3", "text": "Edit amount of coins", "action": lambda: 3},
+        options = [
+            {"option": "1", "text": "Edit amount of coins", "action": lambda: 1},
+            {"option": "2", "text": "Edit receiver's username", "action": lambda: 2},
+            {"option": "3", "text": "Edit transaction fee", "action": lambda: 3},
             {"option": "4", "text": "Back to menu", "action": lambda: "back"}]
         edit_choice = display_menu_and_get_choice(options, self.current_user, f"You are editing transaction: {transactions[tx_choice][1]} to {transactions[tx_choice][2]} with {transactions[tx_choice][3]} transaction fee")
         if edit_choice == "back":
@@ -370,7 +371,7 @@ class User:
             public_key = get_current_user_public_key(self.current_user)
             public_key_receiver = get_current_user_public_key(transactions[tx_choice][2])
             index = find_index_from_file("transactions.dat", transactions[tx_choice][1],  public_key, public_key_receiver, transactions[tx_choice][3])
-            if edit_choice == 1:
+            if edit_choice == 2:
                 new_username = input("Enter new username: ").replace(" ", "").lower()
                 if not self.validate_username(new_username) or not self.username_exists(new_username):
                     print_header(self.current_user)
@@ -385,7 +386,7 @@ class User:
                 tx.add_input(public_key, transactions[tx_choice][1])
                 tx.add_output(public_key_new_receiver, transactions[tx_choice][1])
 
-            elif edit_choice == 2:
+            elif edit_choice == 3:
                 new_fee = input("Enter new transaction fee: ")
                 try:
                     new_fee = float(new_fee)
@@ -415,7 +416,7 @@ class User:
                 tx.add_input(public_key, transactions[tx_choice][1])
                 tx.add_output(public_key_receiver,transactions[tx_choice][1])
 
-            elif edit_choice == 3:
+            elif edit_choice == 1:
                 new_amount = input("Enter new amount: ")
                 try:
                     new_amount = float(new_amount)
