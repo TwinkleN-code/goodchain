@@ -1,5 +1,6 @@
-from utils import sign, verify, print_header
+from utils import sign, verify, print_header, get_all_transactions
 from storage import save_to_file, load_from_file
+import time
 
 REWARD_VALUE = 50
 NORMAL = 0
@@ -22,7 +23,7 @@ transaction_pool = TransactionPool()
 
 class Transaction:
     def __init__(self, type = NORMAL, fee=0):
-        
+        self.timestamp = time.time()
         self.type = type
         self.input = None
         self.output = None
@@ -70,7 +71,7 @@ class Transaction:
         return [self.input, self.output, self.fee]
 
     def view_transactions(self, username):
-        transactions = load_from_file("transactions.dat")
+        transactions = get_all_transactions("transactions.dat")
 
         if not transactions:
             print_header(username)
@@ -79,7 +80,10 @@ class Transaction:
             print_header(username)
             print("All Transactions: \n")
             for tx in transactions:
-                print(tx)
+                if len(tx) == 6:
+                    print(f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)")
+                else:
+                    print(f"Reward Transaction: {tx[1]} coins credited to {tx[2]}")
 
     def __repr__(self):
         types_str = "Reward transaction" if self.type == REWARD else "Normal transaction"
