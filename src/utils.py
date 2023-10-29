@@ -44,6 +44,7 @@ def print_header(username=None):
 
     if username:
         print("\nLogged in as: " + username + "\n")
+        view_balance(username)
 
     print(header)
     print(title)
@@ -120,16 +121,36 @@ def get_user_transactions(filename, current_user):
 
     return user_transactions
 
-def remove_from_file(filename, index):
+def remove_from_file(filename, *args):
     # Load all data from the file
     all_data = load_from_file(filename)
 
     # Check if the index is valid
-    if 0 <= index < len(all_data):
-        # Delete the entry 
-        del all_data[index]
-        # Save the modified data back to the file
-        save_to_file(all_data, filename)
-        return True
-    return False
+    for index in args:
+        if 0 <= index < len(all_data):
+            # Delete the entry 
+            del all_data[index]
+            # Save the modified data back to the file
+            save_to_file(all_data, filename)
+            return True
+        return False
         
+def view_balance(username):
+        transactions = load_from_file("transactions.dat")
+        public_key = get_current_user_public_key(username)
+        user_balance = calculate_balance(public_key, transactions)
+        print(f"Balance: {user_balance} coins. \n")
+
+def calculate_balance(user_public_key, transactions):
+    balance = 0
+    for tx in transactions:
+        if tx.output:
+            output_addr, tx_amount = tx.output
+            if output_addr == user_public_key:
+                balance += tx_amount
+        if tx.input:
+            input_addr, tx_amount = tx.input
+            if input_addr == user_public_key:
+                balance -= tx_amount
+                balance -= tx.fee 
+    return balance

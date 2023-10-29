@@ -23,13 +23,12 @@ def display_menu(is_logged_in):
         return [
             {"option": "1", "text": "Send coins", "action": lambda: user.transfer_coins()},
             {"option": "2", "text": "View keys", "action": lambda: view_user_keys(user.current_user)}, 
-            {"option": "3", "text": "Account Settings", "action": lambda: settings_menu()},
-            {"option": "4", "text": "View balance", "action": lambda: user.view_balance()},           
-            {"option": "5", "text": "View transactions", "action": lambda: user.view_transactions()},
-            {"option": "6", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
-            {"option": "7", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},
-            {"option": "8", "text": "Logout", "action": lambda: user.logout()},
-            {"option": "9", "text": "Exit application", "action": lambda: "exit"}
+            {"option": "3", "text": "Account Settings", "action": lambda: settings_menu()},          
+            {"option": "4", "text": "View transactions", "action": lambda: user.view_transactions()},
+            {"option": "5", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
+            {"option": "6", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},
+            {"option": "7", "text": "Logout", "action": lambda: user.logout()},
+            {"option": "8", "text": "Exit application", "action": lambda: "exit"}
         ]
     else:
         return [

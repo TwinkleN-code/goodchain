@@ -3,7 +3,7 @@ import re
 import getpass
 from keys import encrypt, encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
-from utils import display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file
+from utils import display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file
@@ -57,6 +57,7 @@ class User:
 
 
     def register(self):
+        print_header()
         username = input('Enter a username: ').lower()
 
         if self.username_exists(username):
@@ -120,6 +121,7 @@ class User:
             return
 
     def login(self):
+        print_header()
         username = input('Enter your username: ').lower()
         password = getpass.getpass('Enter your password: ')
 
@@ -204,27 +206,6 @@ class User:
 
         transaction_pool.add_transaction(reward_transaction)
 
-    def view_balance(self):
-        transactions = load_from_file("transactions.dat")
-        public_key = get_current_user_public_key(self.current_user)
-        user_balance = self.calculate_balance(public_key, transactions)
-        print_header(self.current_user)
-        print(f"Balance for {self.current_user}: {user_balance} coins.")
-
-    def calculate_balance(self, user_public_key, transactions):
-        balance = 0
-        for tx in transactions:
-            if tx.output:
-                output_addr, tx_amount = tx.output
-                if output_addr == user_public_key:
-                    balance += tx_amount
-            if tx.input:
-                input_addr, tx_amount = tx.input
-                if input_addr == user_public_key:
-                    balance -= tx_amount
-                    balance -= tx.fee 
-        return balance
-
     def view_transactions(self):
         transactions = load_from_file("transactions.dat")
 
@@ -245,10 +226,6 @@ class User:
 
         options = [{"option": "1", "text": "Confirm transaction", "action": lambda: "confirm"},
                 {"option": "2", "text": "Cancel", "action": lambda: "back"}]
-        choice_result = display_menu_and_get_choice(options)
-        if choice_result == "back":
-            return
-
         try:
             amount_to_transfer = float(amount_to_transfer)
             transaction_fee = float(transaction_fee)
@@ -271,7 +248,7 @@ class User:
         # check if enough balance
         transactions = load_from_file("transactions.dat")
         public_key = get_current_user_public_key(self.current_user)
-        balance = self.calculate_balance(public_key, transactions)
+        balance = calculate_balance(public_key, transactions)
         if balance < amount_to_transfer + transaction_fee:
             print_header(self.current_user)
             print("Insufficient balance")
@@ -286,6 +263,11 @@ class User:
         if not self.username_exists(receiver_username):
             print_header(self.current_user)
             print('Receiver does not exists.')
+            return
+        
+        print_header(self.current_user)
+        choice_result = display_menu_and_get_choice(options, self.current_user, f"You are sending {amount_to_transfer} coins to {receiver_username} with {transaction_fee} transaction fee")
+        if choice_result == "back":
             return
 
         # make the transaction
@@ -311,6 +293,7 @@ class User:
         print('Transaction successful')
 
     def remove_transaction(self):
+        print_header(self.current_user)
         # show all user transactions from the pool
         transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
@@ -332,6 +315,7 @@ class User:
             return
         
         if choice == len(transactions)+1:
+            print_header(self.current_user)
             return
         else:
             #confirm
@@ -339,6 +323,7 @@ class User:
                 {"option": "2", "text": "Cancel", "action": lambda: "back"}]
             choice_result = display_menu_and_get_choice(options)
             if choice_result == "back":
+                print_header(self.current_user)
                 return
             
             # delete from pool
@@ -377,6 +362,7 @@ class User:
             print("Please enter a correct number")
             return
         if choice == len(transactions)+1:
+            print_header(self.current_user)
             return
         else:
             print_header(self.current_user)
@@ -433,7 +419,7 @@ class User:
                 transactions_list = load_from_file("transactions.dat")
                 temp_amount = transactions[tx_choice][1]
                 del transactions_list[index]
-                balance = self.calculate_balance(public_key, transactions_list)
+                balance = calculate_balance(public_key, transactions_list)
                 if balance < new_fee + temp_amount:
                     print_header(self.current_user)
                     print("Insufficient balance")
@@ -463,7 +449,7 @@ class User:
                 transactions_list = load_from_file("transactions.dat")
                 temp_fee = transactions[tx_choice][3]
                 del transactions_list[index]
-                balance = self.calculate_balance(public_key, transactions_list)
+                balance = calculate_balance(public_key, transactions_list)
                 if balance < new_amount + temp_fee:
                     print_header(self.current_user)
                     print("Insufficient balance")

@@ -36,6 +36,7 @@ def generate_random_mnemonic():
 
 
 def recover_private_key():
+    print_header()
     db = Database()
     username = input('Enter username: ').lower()
     user_key = input("Enter recovery key: ")
