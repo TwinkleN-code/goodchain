@@ -4,8 +4,9 @@ from cryptography.hazmat.primitives import hashes
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
-from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key
+from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key, get_block_miner
 import os
+import datetime
 
 class Block:
     def __init__(self, transactions, previous_hash, nonce=0):
@@ -13,7 +14,7 @@ class Block:
         self.transactions = transactions
         self.previous_hash = previous_hash
         self.nonce = nonce
-        self.hash = self.compute_hash()
+        self.hash = None
 
     def compute_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
@@ -32,7 +33,7 @@ class Block:
             self.nonce += 1
         end_time = time.time()
         print_header(username)
-        print(f"Block mined in {end_time - start_time} seconds.")
+        print(f"Block mined in {end_time - start_time:.0f} seconds.")
 
     def __repr__(self):
         return f"Block(\n\ttimestamp: {self.timestamp}, \n\ttransactions: {self.transactions}, \n\tprevious_hash: {self.previous_hash}, \n\tnonce: {self.nonce}, \n\thash: {self.hash}\n)"
@@ -144,7 +145,8 @@ class Blockchain:
         new_block.mine(self.difficulty, username)
         self.last_mined_timestamp = time.time()
 
-        print(f"Block mined with hash: {new_block.hash}")
+        chain = load_from_file("blockchain.dat")
+        new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
 
         # Add the new block to the blockchain
         self.add_block(new_block)
@@ -179,9 +181,13 @@ class Blockchain:
             print("No blockchain found.")
         else:
             print_header(username)
-            print("All chain: \n")
+            print("The entire blockchain: \n")
             for block in chain:
-                print(block)
+                if block.previous_hash == "0":
+                    print(f"Genesis Block created at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
+                else:
+                    block_miner = get_block_miner("blockchain.dat", chain.index(block))
+                    print(f"Block {chain.index(block)} mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}, hash: {block.hash}, nonce: {block.nonce}, previous_hash: {block.previous_hash}")
 
     def view_block(self, block_index, username=None):
         chain = load_from_file("blockchain.dat")
