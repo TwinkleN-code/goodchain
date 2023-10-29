@@ -1,10 +1,10 @@
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from transaction import REWARD_VALUE, REWARD, Transaction, transaction_pool
+from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
-from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file
+from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key
 
 class Block:
     def __init__(self, transactions, previous_hash, nonce=0):
@@ -30,8 +30,11 @@ class Block:
         end_time = time.time()
         print(f"Block mined in {end_time - start_time} seconds.")
 
+    def __repr__(self):
+        return f"Block(\n\ttimestamp: {self.timestamp}, \n\ttransactions: {self.transactions}, \n\tprevious_hash: {self.previous_hash}, \n\tnonce: {self.nonce}, \n\thash: {self.hash}\n)"
 
-class Ledger:
+
+class Blockchain:
     def __init__(self):
         self.chain = [self.create_genesis_block()]
         self.difficulty = 4  # This can be adjusted based on your desired mining difficulty.
@@ -45,8 +48,14 @@ class Ledger:
     def add_block(self, block):
         # A function to add the block to the blockchain after it's mined.
         self.chain.append(block)
+        self._save_block_to_file(block)
+
+    def _save_block_to_file(self, block):
+        blocks = load_from_file("blockchain.dat")
+        blocks.append(block)
+        save_to_file(blocks, "blockchain.dat")
         
-    def is_valid(self, difficulty):
+    def is_valid(self):
         # Check for genesis block
         if not self.chain:
             return True
@@ -76,7 +85,7 @@ class Ledger:
 
 
             # 3. Check if block's hash meets the difficulty requirement
-            if not current_hash[:difficulty] == '0' * difficulty:
+            if not current_hash[:self.difficulty] == '0' * self.difficulty:
                 print("Block's hash doesn't meet the difficulty requirements.")
                 return False
 
@@ -91,7 +100,7 @@ class Ledger:
         return True
 
     def mine_transactions(self, username):
-        transactions = load_from_file()
+        transactions = load_from_file("transactions.dat")
         # We take the first 5-10 transactions from the pool
         if len(transactions) < 5:
             print_header(username)
@@ -118,19 +127,36 @@ class Ledger:
         self.add_block(new_block)
 
         # Save the blockchain to file
-        save_to_file(self.chain, "transactions.dat")
+        save_to_file(self.chain, "blockchain.dat")
 
-        # Update the transaction pool
-        # You need to remove only the transactions that were included in the new block
-        for tx in transactions:
-            remove_from_file(transaction_pool, tx)
+        # Update the transaction pool by removing included transactions
+        indices_to_remove = []
+        for tx in transactions[:-1]:  # Exclude the reward transaction
+            if tx.type == NORMAL:
+                public_key_sender = tx.input[0]
+                amount = tx.input[1]
+                public_key_receiver = tx.output[0]
+                fee = tx.fee
+
+                index = find_index_from_file("transaction.dat", amount, public_key_sender, public_key_receiver, fee)
+                if index is not None:
+                    indices_to_remove.append(index)
+            else:
+                public_key_receiver = tx.output[0]
+                index = find_index_from_file_by_public_key("transaction.dat", public_key_receiver)
+                if index is not None:
+                    indices_to_remove.append(index)
+    
+        # Remove transactions in reverse order to maintain correct indices
+        for index in sorted(indices_to_remove, reverse=True):
+            remove_from_file("transaction.dat", index)
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")
 
         if not chain:
             print_header(username)
-            print("No ledger found.")
+            print("No blockchain found.")
         else:
             print_header(username)
             print("All chain: \n")
@@ -142,7 +168,7 @@ class Ledger:
 
         if not chain:
             print_header(username)
-            print("No ledger found.")
+            print("No blockchain found.")
         else:
             print_header(username)
             print("Block: \n")

@@ -5,12 +5,12 @@ from transaction import Transaction
 from keys import *
 from recover_key import recover_private_key
 from utils import print_header, display_menu_and_get_choice
-from blockchain import Ledger
+from blockchain import Blockchain
 
 user = User()
 db = Database()
 transaction = Transaction()
-ledger = Ledger()
+blockchain = Blockchain()
 
 def settings_menu():
     print_header(user.current_user)
@@ -28,19 +28,20 @@ def display_menu(is_logged_in):
             {"option": "1", "text": "View keys", "action": lambda: view_user_keys(user.current_user)}, 
             {"option": "2", "text": "Account Settings", "action": lambda: settings_menu()},          
             {"option": "3", "text": "View transaction pool", "action": lambda: transaction.view_transactions(user.current_user)},
-            {"option": "4", "text": "view ledger", "action": lambda: ledger.view_blockchain(user.current_user)},
+            {"option": "4", "text": "view blockchain", "action": lambda: blockchain.view_blockchain(user.current_user)},
             {"option": "5", "text": "Send coins", "action": lambda: user.transfer_coins()},
             {"option": "6", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
             {"option": "7", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},
-            {"option": "8", "text": "Logout", "action": lambda: user.logout()},
-            {"option": "9", "text": "Exit application", "action": lambda: "exit"}
+            {"option": "8", "text": "Mine transactions", "action": lambda: blockchain.mine_transactions(user.current_user)},
+            {"option": "9", "text": "Logout", "action": lambda: user.logout()},
+            {"option": "10", "text": "Exit application", "action": lambda: "exit"}
         ]
     else:
         return [
             {"option": "1", "text": "Register", "action": lambda: user.register()},
             {"option": "2", "text": "Login", "action": lambda: user.login()},          
             {"option": "3", "text": "Recover private key", "action": lambda: recover_private_key()},
-            {"option": "4", "text": "view ledger", "action": lambda: ledger.view_blockchain()},
+            {"option": "4", "text": "view blockchain", "action": lambda: blockchain.view_blockchain()},
             {"option": "5", "text": "Exit application", "action": lambda: "exit"}
         ]
 

@@ -12,14 +12,17 @@ def clear_screen():
 
 def display_menu_and_get_choice(options , username=None, *args):
     """Display menu based on the provided options and get user's choice."""
-    max_option_length = max(len(opt['text']) for opt in options) + 6
+    max_option_length = max(len(opt['text']) for opt in options)
+    max_option_number_length = max(len(str(opt['option'])) for opt in options)
+    total_length = max_option_length + max_option_number_length + 6
+
     while True:
         print(*args, sep='\n')
-        print("┌" + "─" * max_option_length + "┐")
+        print("┌" + "─" * (total_length - 2) + "┐")
         for opt in options:
-            spaces_required = max_option_length - len(opt['text']) - 4
+            spaces_required = (total_length - 1) - len(opt['text']) - len(str(opt['option'])) - 4
             print(f"│ {opt['option']}. {opt['text']}" + ' ' * spaces_required + "│")
-        print("└" + "─" * max_option_length + "┘")
+        print("└" + "─" * (total_length - 2) + "┘")
         
         choice = input('> ')
         action = next((opt['action'] for opt in options if opt['option'] == choice), None)
@@ -106,6 +109,18 @@ def find_index_from_file(filename, input, public_key_sender, public_key_receiver
         index += 1
     return None
 
+def find_index_from_file_by_public_key(filename, public_key):
+    # Load all data from the file
+    all_data = load_from_file(filename)
+
+    # Find the index of the data that contains the target_input
+    index = 0
+    for tx in all_data:
+        if tx.type == 1 and tx.output[0] == public_key:
+            return index
+        index += 1
+    return None
+
 def get_user_transactions(filename, current_user):
     public_key = get_current_user_public_key(current_user)
     all_data = load_from_file(filename)
@@ -121,19 +136,18 @@ def get_user_transactions(filename, current_user):
 
     return user_transactions
 
-def remove_from_file(filename, *args):
+def remove_from_file(filename, index):
     # Load all data from the file
     all_data = load_from_file(filename)
 
     # Check if the index is valid
-    for index in args:
-        if 0 <= index < len(all_data):
-            # Delete the entry 
-            del all_data[index]
-            # Save the modified data back to the file
-            save_to_file(all_data, filename)
-            return True
-        return False
+    if 0 <= index < len(all_data):
+        # Delete the entry 
+        del all_data[index]
+        # Save the modified data back to the file
+        save_to_file(all_data, filename)
+        return True
+    return False
         
 def view_balance(username):
         transactions = load_from_file("transactions.dat")
