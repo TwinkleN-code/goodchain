@@ -34,6 +34,8 @@ def display_menu_and_get_choice(options , username=None, *args):
         else:
             print_header(username)
             print('Invalid choice')
+            if args:
+                print('')
 
 def print_header(username=None):
     clear_screen()

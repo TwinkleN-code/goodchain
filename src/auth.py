@@ -238,6 +238,7 @@ class User:
                 print(tx)
 
     def transfer_coins(self):
+        print_header(self.current_user)
         amount_to_transfer = input("Enter number of coins to send: ")
         receiver_username = input("Enter the receiver's username: ").replace(" ", "").lower()
         transaction_fee = input("Enter transaction fee: ")
@@ -253,7 +254,7 @@ class User:
             transaction_fee = float(transaction_fee)
         except ValueError:
             print_header(self.current_user)
-            print("Invalid input")
+            print("Please enter a correct number")
             return
 
         # check if username is current user
@@ -313,6 +314,7 @@ class User:
         # show all user transactions from the pool
         transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
+            print_header(self.current_user)
             print("You have no transactions")
             return
         
@@ -325,7 +327,8 @@ class User:
         try:
             choice = int(choice)
         except ValueError:
-            print("Invalid input")
+            print_header(self.current_user)
+            print("Please enter a correct number")
             return
         
         if choice == len(transactions)+1:
@@ -342,8 +345,10 @@ class User:
             index = find_index_from_file("transactions.dat", transactions[choice-1][1], get_current_user_public_key(self.current_user), get_current_user_public_key(transactions[choice-1][2]), transactions[choice-1][3])
             remove = remove_from_file("transactions.dat", index)
             if remove:
+                print_header(self.current_user)
                 print("Transaction canceled")
             else:
+                print_header(self.current_user)
                 print("Could not cancel transaction")
             return
 
@@ -351,8 +356,10 @@ class User:
         transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
         options = []
         if transactions == []:
+            print_header(self.current_user)
             print("You have no transactions")
             return
+        print_header(self.current_user)
         print("Pending transactions")
         for tx in transactions:
             print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[3]} transaction fee")
@@ -362,12 +369,17 @@ class User:
         try:
             choice = int(choice)
         except ValueError:
-            print("Invalid input")
+            print_header(self.current_user)
+            print("Please enter a correct number")
             return
-        
+        if choice > len(transactions)+1 or choice < 1:
+            print_header(self.current_user)
+            print("Please enter a correct number")
+            return
         if choice == len(transactions)+1:
             return
         else:
+            print_header(self.current_user)
             self.transaction_edit_menu(transactions, choice-1)
             return
 
@@ -376,7 +388,7 @@ class User:
             {"option": "2", "text": "Edit transaction fee", "action": lambda: 2},
             {"option": "3", "text": "Edit amount of coins", "action": lambda: 3},
             {"option": "4", "text": "Back to menu", "action": lambda: "back"}]
-        edit_choice = display_menu_and_get_choice(options)
+        edit_choice = display_menu_and_get_choice(options, self.current_user, f"You are editing transaction: {transactions[tx_choice][1]} to {transactions[tx_choice][2]} with {transactions[tx_choice][3]} transaction fee")
         if edit_choice == "back":
             return
         else:
@@ -391,6 +403,10 @@ class User:
                     print_header(self.current_user)
                     print("Invalid username")
                     return
+                if new_username == transactions[tx_choice][2]:
+                    print_header(self.current_user)
+                    print("That's the same username")
+                    return
 
                 public_key_new_receiver = get_current_user_public_key(new_username)
                 tx.add_input(public_key, transactions[tx_choice][1])
@@ -402,11 +418,15 @@ class User:
                     new_fee = float(new_fee)
                 except ValueError:
                     print_header(self.current_user)
-                    print("Invalid input")
+                    print("Please enter a correct number")
                     return
                 if new_fee <= 0:
                     print_header(self.current_user)
                     print('Invalid amount')
+                    return
+                if new_fee == transactions[tx_choice][3]:
+                    print_header(self.current_user)
+                    print("That's the same transaction fee")
                     return
 
                 # check if enough balance
@@ -428,11 +448,15 @@ class User:
                     new_amount = float(new_amount)
                 except ValueError:
                     print_header(self.current_user)
-                    print("Invalid input")
+                    print("Please enter a correct number")
                     return
                 if new_amount <= 0:
                     print_header(self.current_user)
                     print('Invalid amount')
+                    return
+                if new_amount == transactions[tx_choice][1]:
+                    print_header(self.current_user)
+                    print("That's the same amount")
                     return
 
                 # check if enough balance
@@ -457,7 +481,7 @@ class User:
             #confirm
             options = [{"option": "1", "text": "Save changes", "action": lambda: "confirm"},
                         {"option": "2", "text": "Cancel", "action": lambda: "back"}]
-            choice_result = display_menu_and_get_choice(options)
+            choice_result = display_menu_and_get_choice(options, self.current_user)
             if choice_result == "back":
                 return
             
