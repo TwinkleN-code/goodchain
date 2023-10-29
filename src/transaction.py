@@ -1,4 +1,4 @@
-from utils import sign, verify
+from utils import sign, verify, print_header
 from storage import save_to_file, load_from_file
 
 REWARD_VALUE = 50
@@ -68,6 +68,18 @@ class Transaction:
 
     def _prepare_data_for_signature(self):
         return [self.input, self.output, self.fee]
+
+    def view_transactions(self, username):
+        transactions = load_from_file("transactions.dat")
+
+        if not transactions:
+            print_header(username)
+            print("No transactions found.")
+        else:
+            print_header(username)
+            print("All Transactions: \n")
+            for tx in transactions:
+                print(tx)
 
     def __repr__(self):
         types_str = "Reward transaction" if self.type == REWARD else "Normal transaction"

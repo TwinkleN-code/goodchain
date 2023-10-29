@@ -1,7 +1,7 @@
 import sqlite3
 import re
 import getpass
-from keys import encrypt, encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
+from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
 from utils import display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
 from database import Database
@@ -206,18 +206,6 @@ class User:
 
         transaction_pool.add_transaction(reward_transaction)
 
-    def view_transactions(self):
-        transactions = load_from_file("transactions.dat")
-
-        if not transactions:
-            print_header(self.current_user)
-            print("No transactions found.")
-        else:
-            print_header(self.current_user)
-            print("All Transactions: \n")
-            for tx in transactions:
-                print(tx)
-
     def transfer_coins(self):
         print_header(self.current_user)
         amount_to_transfer = input("Enter number of coins to send: ")
@@ -339,7 +327,6 @@ class User:
 
     def edit_transaction(self):
         transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
-        options = []
         if transactions == []:
             print_header(self.current_user)
             print("You have no transactions")

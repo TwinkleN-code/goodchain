@@ -3,8 +3,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from transaction import REWARD_VALUE, REWARD, Transaction, transaction_pool
 from keys import fetch_decrypted_private_key
-from storage import load_from_file
-from utils import get_current_user_public_key, print_header, remove_from_file
+from storage import load_from_file, save_to_file
+from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file
 
 class Block:
     def __init__(self, transactions, previous_hash, nonce=0):
@@ -22,9 +22,11 @@ class Block:
     def mine(self, difficulty):
         pattern = '0' * difficulty
         start_time = time.time()
-        while self.hash[:difficulty] != pattern:
-            self.nonce += 1
+        while True:
             self.hash = self.compute_hash()
+            if self.hash[:difficulty] == pattern:
+                break
+            self.nonce += 1
         end_time = time.time()
         print(f"Block mined in {end_time - start_time} seconds.")
 
@@ -46,33 +48,35 @@ class Ledger:
         
     def is_valid(self, difficulty):
         # Check for genesis block
-        if not self.blocks:
+        if not self.chain:
             return True
-
-        # Genesis block validation
-        first_block = self.blocks[0]
-        if not first_block.previous_hash is None:
-            print("Genesis block's previous hash is not None.")
-            return False
+        
+        previous_hash = "0"
 
         # Start with the last block and validate chain integrity
-        for i in range(1, len(self.blocks)):
-            current_block = self.blocks[i]
-            previous_block = self.blocks[i - 1]
+        for i, current_block in enumerate(self.chain):
+            current_hash = current_block.compute_hash()
+
+            # Skip genesis block but check its previous hash
+            if i == 0:
+                if current_block.previous_hash != "0":
+                    print("Genesis block's previous hash should be '0'.")
+                    return False
+                continue
 
             # 1. Check the previous_hash of the current block
-            if current_block.previous_hash != previous_block.compute_hash():
+            if current_block.previous_hash != previous_hash:
                 print("Previous block hash doesn't match with stored previous hash value.")
                 return False
 
             # 2. Check the hash of the current block
-            if current_block.hash != current_block.compute_hash():
+            if current_block.hash != current_hash:
                 print("Hash of the block is not valid.")
                 return False
 
 
             # 3. Check if block's hash meets the difficulty requirement
-            if not current_block.compute_hash()[:difficulty] == '0' * difficulty:
+            if not current_hash[:difficulty] == '0' * difficulty:
                 print("Block's hash doesn't meet the difficulty requirements.")
                 return False
 
@@ -81,9 +85,10 @@ class Ledger:
                 if not transaction.is_valid():
                     print(f"Transaction {transaction} in block {i} is not valid.")
                     return False
+                
+            previous_hash = current_hash
 
         return True
-
 
     def mine_transactions(self, username):
         transactions = load_from_file()
@@ -101,16 +106,44 @@ class Ledger:
         reward_transaction.add_output(public_key, REWARD_VALUE)
         reward_transaction.sign(decrypted_private_key)
         
-        transaction_pool.add_transaction(reward_transaction)
-
-        transactions = load_from_file()
+        transactions.append(reward_transaction)
         
         # Create a new block with the transactions and mine it
         new_block = Block(transactions, self.chain[-1].hash)
         new_block.mine(self.difficulty)
 
         print(f"Block mined with hash: {new_block.hash}")
+
+        # Add the new block to the blockchain
         self.add_block(new_block)
 
-        # Remove the mined transactions from the transaction pool
-        remove_from_file(transaction_pool, transactions)
+        # Save the blockchain to file
+        save_to_file(self.chain, "transactions.dat")
+
+        # Update the transaction pool
+        # You need to remove only the transactions that were included in the new block
+        for tx in transactions:
+            remove_from_file(transaction_pool, tx)
+
+    def view_blockchain(self, username=None):
+        chain = load_from_file("blockchain.dat")
+
+        if not chain:
+            print_header(username)
+            print("No ledger found.")
+        else:
+            print_header(username)
+            print("All chain: \n")
+            for block in chain:
+                print(block)
+
+    def view_block(self, block_index, username=None):
+        chain = load_from_file("blockchain.dat")
+
+        if not chain:
+            print_header(username)
+            print("No ledger found.")
+        else:
+            print_header(username)
+            print("Block: \n")
+            print(chain[block_index])
