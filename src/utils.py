@@ -152,6 +152,12 @@ def get_all_transactions(filename):
 
     return user_transactions
 
+def get_block_miner(filename, index):
+    all_data = load_from_file(filename)
+    db = Database()
+    get_miner_username = db.fetch('SELECT username FROM users WHERE publickey=?', (all_data[index].transactions[-1].output[0], ))
+    return get_miner_username[0][0]
+
 def remove_from_file(filename, index):
     # Load all data from the file
     all_data = load_from_file(filename)
