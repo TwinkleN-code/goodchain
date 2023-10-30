@@ -83,7 +83,7 @@ class Transaction:
             print_header(username)
             transactions_to_display = "All Transactions: \n\n"
             for tx in transactions:
-                if len(tx) == 6:
+                if len(tx) == 7:
                     transactions_to_display += f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n"
                 else:
                     transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n"
