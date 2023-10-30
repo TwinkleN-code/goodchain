@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
-from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key, get_block_miner, display_menu_and_get_choice, get_all_transactions_in_block
+from utils import *
 import os
 import datetime
 
@@ -124,12 +124,68 @@ class Blockchain:
             return
 
         transactions = load_from_file("transactions.dat")
+        transactions_to_mine = []
+        indices_to_remove = []
         # Need to have 5 transactions to mine (4 transactions + mining reward)
         if len(transactions) < 4:
             print_header(username)
             print("Not enough transactions to mine.")
             return
+        elif len(transactions) >= 10:
+            print_header(username)
+            transactions_list = get_all_transactions("transactions.dat")
+            print("All Transactions: \n")
+            for tx in transactions_list:
+                print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[3]} transaction fee")
+            print(f"{len(transactions)+1}. Back to main menu")
+            user_choice = input(f"Enter up to 4 transaction numbers to include, separated by spaces: ").split()
+            if len(user_choice) > 4:
+                print_header(username)
+                print(f"You can only select up to 4 transactions.")
+                return  # Exit the function if the user selected too many transactions
+            
+            if len(user_choice) < 1:
+                print_header(username)
+                print("You want to select no transactions?")
+                choice = input("Enter 'y' to confirm: ")
+                if choice != "y":    
+                    return                
 
+            for number in user_choice:
+                try:
+                    index = int(number) - 1
+                    if index >= 0 and index < len(transactions):
+                        indices_to_remove.append(index)
+                        transactions_to_mine.append(transactions[index])
+                    else:
+                        print_header(username)
+                        print("Invalid input. Please enter numbers within the range.")
+                        return
+                except ValueError:
+                    print_header(username)
+                    print("Invalid input. Please enter numbers only.")
+                    return
+            # Filter out the user-picked transactions
+            filtered_transactions = [tx for tx in transactions if tx not in transactions_to_mine]
+            if len(transactions_to_mine) == 1:
+                remaining_slots = 8
+            elif len(transactions_to_mine) == 2:
+                remaining_slots = 7
+            elif len(transactions_to_mine) == 3:
+                remaining_slots = 6
+            elif len(transactions_to_mine) == 4:
+                remaining_slots = 5
+            elif len(transactions_to_mine) == 0:
+                remaining_slots = 9
+            sorted_transactions = sorted(filtered_transactions, key=lambda x: x.timestamp)  # Sort by timestamp
+            for tx in sorted_transactions:
+                if remaining_slots > 0:
+                    transactions_to_mine.append(tx)
+                    indices_to_remove.append(transactions.index(tx))
+                    remaining_slots -= 1
+
+        if transactions_to_mine == []:
+            transactions_to_mine = transactions
         # Add a reward transaction for the miner
         decrypted_private_key = fetch_decrypted_private_key(username)
         public_key = get_current_user_public_key(username)
@@ -138,10 +194,10 @@ class Blockchain:
         reward_transaction.add_output(public_key, REWARD_VALUE)
         reward_transaction.sign(decrypted_private_key)
         
-        transactions.append(reward_transaction)
+        transactions_to_mine.append(reward_transaction)
         
         # Create a new block with the transactions and mine it
-        new_block = Block(transactions, self.chain[-1].hash)
+        new_block = Block(transactions_to_mine, self.chain[-1].hash)
         new_block.mine(self.difficulty, username)
         self.last_mined_timestamp = time.time()
 
@@ -150,28 +206,29 @@ class Blockchain:
 
         # Add the new block to the blockchain
         self.add_block(new_block)
+        if indices_to_remove == []:
+            for tx in transactions[:-1]:  # Remove transactions in reverse order to maintain correct indices
+                if tx.type == NORMAL:
+                    public_key_sender = tx.input[0]
+                    amount = tx.input[1]
+                    public_key_receiver = tx.output[0]
+                    fee = tx.fee
 
-        # Update the transaction pool by removing included transactions
-        indices_to_remove = []
-        for tx in transactions[:-1]:  # Exclude the reward transaction
-            if tx.type == NORMAL:
-                public_key_sender = tx.input[0]
-                amount = tx.input[1]
-                public_key_receiver = tx.output[0]
-                fee = tx.fee
+                    index = find_index_from_file("transactions.dat", amount, public_key_sender, public_key_receiver, fee)
+                    if index is not None:
+                        indices_to_remove.append(index)
+                else:
+                    public_key_receiver = tx.output[0]
+                    index = find_index_from_file_by_public_key("transactions.dat", public_key_receiver)
+                    if index is not None:
+                        indices_to_remove.append(index)
+        
+            for index in sorted(indices_to_remove, reverse=True):
+                remove_from_file("transactions.dat", index)
 
-                index = find_index_from_file("transactions.dat", amount, public_key_sender, public_key_receiver, fee)
-                if index is not None:
-                    indices_to_remove.append(index)
-            else:
-                public_key_receiver = tx.output[0]
-                index = find_index_from_file_by_public_key("transactions.dat", public_key_receiver)
-                if index is not None:
-                    indices_to_remove.append(index)
-    
-        # Remove transactions in reverse order to maintain correct indices
-        for index in sorted(indices_to_remove, reverse=True):
-            remove_from_file("transactions.dat", index)
+        else:
+            for index in sorted(indices_to_remove, reverse=True):
+                remove_from_file("transactions.dat", index)
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")
@@ -224,7 +281,7 @@ class Blockchain:
         transactions_to_display += f"All Transactions in block: \n\n"
 
         for tx in transactions:
-                if len(tx) == 6:
+                if len(tx) == 7:
                     transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n")
                 else:
                     transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n")
