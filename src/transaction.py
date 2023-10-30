@@ -1,4 +1,4 @@
-from utils import sign, verify, print_header, get_all_transactions
+from utils import sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
 from storage import save_to_file, load_from_file
 import time
 
@@ -72,18 +72,23 @@ class Transaction:
 
     def view_transactions(self, username):
         transactions = get_all_transactions("transactions.dat")
+        options = [
+        {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
+        ]
 
         if not transactions:
             print_header(username)
             print("No transactions found.")
         else:
             print_header(username)
-            print("All Transactions: \n")
+            transactions_to_display = "All Transactions: \n\n"
             for tx in transactions:
                 if len(tx) == 6:
-                    print(f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)")
+                    transactions_to_display += f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n"
                 else:
-                    print(f"Reward Transaction: {tx[1]} coins credited to {tx[2]}")
+                    transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n"
+            
+            display_menu_and_get_choice(options, username, transactions_to_display)
 
     def __repr__(self):
         types_str = "Reward transaction" if self.type == REWARD else "Normal transaction"
