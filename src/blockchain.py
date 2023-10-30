@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
-from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key, get_block_miner
+from utils import get_current_user_public_key, print_header, remove_from_file, find_index_from_file, find_index_from_file_by_public_key, get_block_miner, display_menu_and_get_choice, get_all_transactions_in_block
 import os
 import datetime
 
@@ -187,15 +187,46 @@ class Blockchain:
                     print(f"Genesis Block created at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
                 else:
                     block_miner = get_block_miner("blockchain.dat", chain.index(block))
-                    print(f"Block {chain.index(block)} mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}, hash: {block.hash}, nonce: {block.nonce}, previous_hash: {block.previous_hash}")
+                    print(f"{chain.index(block)}. Block mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
 
-    def view_block(self, block_index, username=None):
-        chain = load_from_file("blockchain.dat")
+        print(f"{len(chain)}. Back to main menu\n")
+        
+        choice = input("Enter block to view: ")
 
-        if not chain:
+        try:
+            choice = int(choice)
+        except ValueError:
             print_header(username)
-            print("No blockchain found.")
+            print("Please enter a correct number")
+            return
+        if choice > len(chain) or choice < 1:
+            print_header(username)
+            print("Please enter a correct number")
+            return
+        if choice == len(chain):
+            print_header(username)
+            return
         else:
             print_header(username)
-            print("Block: \n")
-            print(chain[block_index])
+            self._view_block(chain, choice, username)
+            return
+
+    def _view_block(self, chain, block_index, username=None):
+        options = [
+        {"option": "1", "text": "back to blockchain", "action": lambda: self.view_blockchain()},
+        {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
+        ]
+        transactions = get_all_transactions_in_block(chain, block_index)
+
+        transactions_to_display =  f"Block {block_index}: \nHash: {chain[block_index].hash} \nNonce: {chain[block_index].nonce} \nPrevious_hash: {chain[block_index].previous_hash} \n\n"
+
+        transactions_to_display += f"All Transactions in block: \n\n"
+
+        for tx in transactions:
+                if len(tx) == 6:
+                    transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s) \n")
+                else:
+                    transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]} \n")
+                    
+
+        display_menu_and_get_choice(options, username, transactions_to_display)
