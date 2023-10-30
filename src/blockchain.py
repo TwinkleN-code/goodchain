@@ -276,7 +276,7 @@ class Blockchain:
         transactions = get_all_transactions_in_block(chain, block_index)
         block_miner = get_block_miner("blockchain.dat", block_index)
 
-        transactions_to_display =  f"Block {block_index}: \n\nMined by: {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}\n\n"
+        transactions_to_display =  f"Block {block_index}: \n\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}\n\n"
 
         transactions_to_display += f"All Transactions in block: \n\n"
 
