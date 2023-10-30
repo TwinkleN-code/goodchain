@@ -217,16 +217,17 @@ class Blockchain:
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)
+        block_miner = get_block_miner("blockchain.dat", block_index)
 
-        transactions_to_display =  f"Block {block_index}: \nHash: {chain[block_index].hash} \nNonce: {chain[block_index].nonce} \nPrevious_hash: {chain[block_index].previous_hash} \n\n"
+        transactions_to_display =  f"Block {block_index}: \n\nMined by: {block_miner}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}\n\n"
 
         transactions_to_display += f"All Transactions in block: \n\n"
 
         for tx in transactions:
                 if len(tx) == 6:
-                    transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s) \n")
+                    transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n")
                 else:
-                    transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]} \n")
+                    transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n")
                     
 
         display_menu_and_get_choice(options, username, transactions_to_display)
