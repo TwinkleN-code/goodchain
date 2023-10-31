@@ -28,7 +28,7 @@ def display_menu(is_logged_in):
             {"option": "1", "text": "View keys", "action": lambda: view_user_keys(user.current_user)}, 
             {"option": "2", "text": "Account Settings", "action": lambda: settings_menu()},          
             {"option": "3", "text": "View transaction pool", "action": lambda: transaction.view_transactions(user.current_user)},
-            {"option": "4", "text": "view blockchain", "action": lambda: blockchain.view_blockchain(user.current_user)},
+            {"option": "4", "text": "View blockchain", "action": lambda: blockchain.view_blockchain(user.current_user)},
             {"option": "5", "text": "Send coins", "action": lambda: user.transfer_coins()},
             {"option": "6", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
             {"option": "7", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},

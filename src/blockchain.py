@@ -116,6 +116,7 @@ class Blockchain:
         return True
 
     def mine_transactions(self, username):
+        # add 3 minutes time interval
         current_timestamp = time.time()
         time_since_last_mine = current_timestamp - self.last_mined_timestamp
         if time_since_last_mine < 180:  # 180 seconds = 3 minutes
@@ -136,7 +137,10 @@ class Blockchain:
             transactions_list = get_all_transactions("transactions.dat")
             print("All Transactions: \n")
             for tx in transactions_list:
-                print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[3]} transaction fee")
+                if len(tx) > 5:
+                    print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[4]} transaction fee")
+                else:
+                    print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with 0 transaction fee")
             print(f"{len(transactions)+1}. Back to main menu")
             user_choice = input(f"Enter up to 4 transaction numbers to include, separated by spaces: ").split()
             if len(user_choice) > 4:
@@ -147,7 +151,7 @@ class Blockchain:
             if len(user_choice) < 1:
                 print_header(username)
                 print("You want to select no transactions?")
-                choice = input("Enter 'y' to confirm: ")
+                choice = input("Enter 'y' to confirm: ").lower()
                 if choice != "y":    
                     return                
 
