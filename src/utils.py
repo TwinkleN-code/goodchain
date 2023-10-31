@@ -157,12 +157,12 @@ def get_all_transactions_in_block(chain, block_index):
     user_transactions = []
     count=1
     for tx in chain[block_index].transactions:
-        get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+        get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
         if tx.type == 0:
-            get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
-            user_transactions.append([count, tx.input[1], get_sender_username[0][0], get_receiver_username[0][0], tx.fee, tx.type])
+            get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+            user_transactions.append([count, tx.input[1], get_receiver_username[0][0], get_sender_username[0][0], tx.fee, tx.type])
         else:
-            user_transactions.append([count, tx.output[1], get_sender_username[0][0], tx.type])
+            user_transactions.append([count, tx.output[1], get_receiver_username[0][0], tx.type])
         count += 1
 
     return user_transactions

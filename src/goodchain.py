@@ -1,4 +1,5 @@
 import os
+import pickle
 from auth import User
 from database import Database
 from transaction import Transaction
@@ -41,7 +42,7 @@ def display_menu(is_logged_in):
             {"option": "1", "text": "Register", "action": lambda: user.register()},
             {"option": "2", "text": "Login", "action": lambda: user.login()},          
             {"option": "3", "text": "Recover private key", "action": lambda: recover_private_key()},
-            {"option": "4", "text": "view blockchain", "action": lambda: blockchain.view_blockchain()},
+            {"option": "4", "text": "View blockchain", "action": lambda: blockchain.view_blockchain()},
             {"option": "5", "text": "Exit application", "action": lambda: "exit"}
         ]
 
@@ -55,9 +56,15 @@ def main_menu():
 
 db.setup()
 
-# create key if not exists
+# create key and files if not exists
 if not os.path.isfile('key.txt'):
     key = generate_key()
     save_key(key)
-    
+if not os.path.isfile('blockchain.dat'):
+    data = []
+    with open("blockchain.dat", 'wb') as file:
+        pickle.dump(data, file)
+if not os.path.isfile('transactions.dat'):
+    with open("transactions.dat", "w"):
+        pass   
 main_menu()

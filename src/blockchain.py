@@ -58,7 +58,10 @@ class Blockchain:
 
     def _save_block_to_file(self, block):
         blocks = load_from_file("blockchain.dat")
-        blocks.append(block)
+        if len(blocks) > 0: 
+            blocks.append(block)
+        else:
+            blocks = self.chain
         save_to_file(blocks, "blockchain.dat")
         save_to_file(self.last_mined_timestamp, "last_mined_timestamp.dat")
 
@@ -206,7 +209,8 @@ class Blockchain:
         self.last_mined_timestamp = time.time()
 
         chain = load_from_file("blockchain.dat")
-        new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
+        if len(chain) > 0:
+            new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
 
         # Add the new block to the blockchain
         self.add_block(new_block)
@@ -274,7 +278,7 @@ class Blockchain:
 
     def _view_block(self, chain, block_index, username=None):
         options = [
-        {"option": "1", "text": "back to blockchain", "action": lambda: self.view_blockchain()},
+        {"option": "1", "text": "Back to blockchain", "action": lambda: self.view_blockchain()},
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)
@@ -285,10 +289,10 @@ class Blockchain:
         transactions_to_display += f"All Transactions in block: \n\n"
 
         for tx in transactions:
-                if len(tx) == 7:
-                    transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n")
-                else:
-                    transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n")
+            if len(tx) == 6:
+                transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n")
+            else:
+                transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n")
                     
 
         display_menu_and_get_choice(options, username, transactions_to_display)
