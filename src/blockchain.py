@@ -9,7 +9,8 @@ import os
 import datetime
 
 class Block:
-    def __init__(self, transactions, previous_hash, nonce=0):
+    def __init__(self, transactions, previous_hash, block_id, nonce=0):
+        self.id = block_id
         self.timestamp = time.time()
         self.transactions = transactions
         self.previous_hash = previous_hash
@@ -36,7 +37,7 @@ class Block:
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
 
     def __repr__(self):
-        return f"Block(\n\ttimestamp: {self.timestamp}, \n\ttransactions: {self.transactions}, \n\tprevious_hash: {self.previous_hash}, \n\tnonce: {self.nonce}, \n\thash: {self.hash}\n)"
+        return f"Block(\n\tid: {self.id}, \n\ttimestamp: {self.timestamp}, \n\ttransactions: {self.transactions}, \n\tprevious_hash: {self.previous_hash}, \n\tnonce: {self.nonce}, \n\thash: {self.hash}\n)"
 
 
 class Blockchain:
@@ -48,8 +49,11 @@ class Blockchain:
 
     def create_genesis_block(self):
         # A function to generate genesis block and append it to the chain.
-        genesis_block = Block([], "0")
+        genesis_block = Block([], "0", 0)
         return genesis_block
+    
+    def next_block_id(self):
+        return len(self.chain)
 
     def add_block(self, block):
         # A function to add the block to the blockchain after it's mined.
@@ -204,12 +208,13 @@ class Blockchain:
         transactions_to_mine.append(reward_transaction)
         
         # Create a new block with the transactions and mine it
-        new_block = Block(transactions_to_mine, self.chain[-1].hash)
+        new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
         new_block.mine(self.difficulty, username)
         self.last_mined_timestamp = time.time()
 
         chain = load_from_file("blockchain.dat")
         if len(chain) > 0:
+            new_block.id = len(chain)
             new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
 
         # Add the new block to the blockchain
@@ -284,7 +289,7 @@ class Blockchain:
         transactions = get_all_transactions_in_block(chain, block_index)
         block_miner = get_block_miner("blockchain.dat", block_index)
 
-        transactions_to_display =  f"Block {block_index}: \n\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}\n\n"
+        transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}\n\n"
 
         transactions_to_display += f"All Transactions in block: \n\n"
 
