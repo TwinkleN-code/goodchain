@@ -29,6 +29,7 @@ class Transaction:
         self.output = None
         self.sig = None
         self.fee = fee
+        self.validators = []
 
     def add_input(self, from_addr, amount):
         self.input = (from_addr, amount)
