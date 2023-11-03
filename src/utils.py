@@ -1,11 +1,12 @@
 import os
 from cryptography.exceptions import *
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
 from storage import load_from_file, save_to_file
+
+BLOCK_STATUS = ["pending", "verified", "rejected"]
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -142,12 +143,12 @@ def get_all_transactions(filename):
     user_transactions = []
     count=1
     for tx in all_data:
-        get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+        get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
         if tx.type == 0:
-            get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
-            user_transactions.append([count, tx.input[1], get_sender_username[0][0], get_receiver_username[0][0], tx.fee, tx.type, tx.timestamp])
+            get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+            user_transactions.append([count, tx.input[1], get_receiver_username[0][0], get_sender_username[0][0], tx.fee, tx.type, tx.timestamp, tx.validators])
         else:
-            user_transactions.append([count, tx.output[1], get_sender_username[0][0], tx.type, tx.timestamp])
+            user_transactions.append([count, tx.output[1], get_receiver_username[0][0], tx.type, tx.timestamp])
         count += 1
 
     return user_transactions
@@ -157,12 +158,12 @@ def get_all_transactions_in_block(chain, block_index):
     user_transactions = []
     count=1
     for tx in chain[block_index].transactions:
-        get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+        get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
         if tx.type == 0:
-            get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
-            user_transactions.append([count, tx.input[1], get_sender_username[0][0], get_receiver_username[0][0], tx.fee, tx.type])
+            get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+            user_transactions.append([count, tx.input[1], get_receiver_username[0][0], get_sender_username[0][0], tx.fee, tx.type])
         else:
-            user_transactions.append([count, tx.output[1], get_sender_username[0][0], tx.type])
+            user_transactions.append([count, tx.output[1], get_receiver_username[0][0], tx.type])
         count += 1
 
     return user_transactions
@@ -187,10 +188,39 @@ def remove_from_file(filename, index):
     return False
         
 def view_balance(username):
-        transactions = load_from_file("transactions.dat")
+        pool_transactions = load_from_file("transactions.dat")
         public_key = get_current_user_public_key(username)
-        user_balance = calculate_balance(public_key, transactions)
-        print(f"Balance: {user_balance} coins. \n")
+
+        #pending balance
+        pending_balance = 0
+        #in transaction pool
+        if pool_transactions:
+            for tx in pool_transactions:
+                if tx.input:
+                    input_addr, tx_amount = tx.input
+                    if input_addr == public_key:
+                        pending_balance += tx_amount
+                        pending_balance += tx.fee
+       
+        #balance from validated blocks
+        chain = load_from_file("blockchain.dat")
+        user_balance = 0
+        for block in chain:
+            if block.status == BLOCK_STATUS[1]:
+                user_balance += calculate_balance(public_key, block.transactions)
+            elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
+                for tx in block.transactions:
+                    if tx.input:
+                        input_addr, tx_amount = tx.input
+                        if input_addr == public_key:
+                            pending_balance += tx_amount
+                            pending_balance += tx.fee  
+        
+        print(f"Available balance: {user_balance} coins") 
+        if pending_balance > 0: 
+            print(f"Pending outgoing: {pending_balance} coins")
+        print("\n")
+
 
 def calculate_balance(user_public_key, transactions):
     balance = 0

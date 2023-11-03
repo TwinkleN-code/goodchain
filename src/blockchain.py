@@ -1,6 +1,7 @@
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from block_validation import last_block_status
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
@@ -8,13 +9,18 @@ from utils import *
 import os
 import datetime
 
+DIFFICULTY = 5
 class Block:
-    def __init__(self, transactions, previous_hash, nonce=0):
+    def __init__(self, transactions, previous_hash, block_id, nonce=0):
+        self.id = block_id
         self.timestamp = time.time()
         self.transactions = transactions
         self.previous_hash = previous_hash
         self.nonce = nonce
         self.hash = None
+        self.validators = []
+        self.status = BLOCK_STATUS[0]
+        # self.created_by = username
 
     def compute_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
@@ -35,21 +41,54 @@ class Block:
         print_header(username)
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
 
+    def is_valid(self, previousBlock, username):
+        #if block is genesis
+        if self.previous_hash == "0" and id == 0:
+            return True
+        
+        #check if transactions are valid
+        invalid_tx = False
+        for tx in self.transactions:
+            if not tx.is_valid():
+                tx.validators.append((username, "invalid"))
+                invalid_tx = True
+
+        if invalid_tx:
+            return False
+        
+        #check the hash of the current block
+        if self.hash != self.compute_hash():
+            return False
+
+        #check if block's hash meets the difficulty requirement
+        if not self.hash[:DIFFICULTY] == '0' * DIFFICULTY:
+            return False
+        
+        # if previous block is genesis
+        if self.previous_hash == None and previousBlock.id == 0 and previousBlock.previous_hash == "0":
+            return True
+                
+        return self.previous_hash == previousBlock.compute_hash()
+
     def __repr__(self):
-        return f"Block(\n\ttimestamp: {self.timestamp}, \n\ttransactions: {self.transactions}, \n\tprevious_hash: {self.previous_hash}, \n\tnonce: {self.nonce}, \n\thash: {self.hash}\n)"
+        return f"Block(\n\tid: {self.id}, \n\ttimestamp: {self.timestamp}, \n\ttransactions: {self.transactions}, \n\tprevious_hash: {self.previous_hash}, \n\tnonce: {self.nonce}, \n\thash: {self.hash}\n)"
 
 
 class Blockchain:
     def __init__(self):
         self.chain = [self.create_genesis_block()]
-        self.difficulty = 5  # This can be adjusted based on your desired mining difficulty.
+        self.difficulty = DIFFICULTY  # This can be adjusted based on your desired mining difficulty.
         self.mining_reward = REWARD_VALUE  # This is the reward a miner gets for mining a block.
         self.last_mined_timestamp = self._load_last_mined_timestamp() # This is the timestamp of the last mined block.
 
     def create_genesis_block(self):
         # A function to generate genesis block and append it to the chain.
-        genesis_block = Block([], "0")
+        genesis_block = Block([], "0", 0)
+        genesis_block.status = BLOCK_STATUS[1]
         return genesis_block
+    
+    def next_block_id(self):
+        return len(self.chain)
 
     def add_block(self, block):
         # A function to add the block to the blockchain after it's mined.
@@ -58,7 +97,10 @@ class Blockchain:
 
     def _save_block_to_file(self, block):
         blocks = load_from_file("blockchain.dat")
-        blocks.append(block)
+        if len(blocks) > 0: 
+            blocks.append(block)
+        else:
+            blocks = self.chain
         save_to_file(blocks, "blockchain.dat")
         save_to_file(self.last_mined_timestamp, "last_mined_timestamp.dat")
 
@@ -116,11 +158,18 @@ class Blockchain:
         return True
 
     def mine_transactions(self, username):
+        # add 3 minutes time interval
         current_timestamp = time.time()
         time_since_last_mine = current_timestamp - self.last_mined_timestamp
         if time_since_last_mine < 180:  # 180 seconds = 3 minutes
             print_header(username)
             print(f"Too soon to mine again. Please wait {180 - time_since_last_mine:.0f} more seconds.")
+            return
+        
+        # new block can only be mined if previous block is valid
+        get_status = last_block_status()
+        if get_status == BLOCK_STATUS[0]:
+            print("Previous block needs to be validated first.")
             return
 
         transactions = load_from_file("transactions.dat")
@@ -136,7 +185,10 @@ class Blockchain:
             transactions_list = get_all_transactions("transactions.dat")
             print("All Transactions: \n")
             for tx in transactions_list:
-                print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[3]} transaction fee")
+                if len(tx) > 5:
+                    print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[4]} transaction fee")
+                else:
+                    print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with 0 transaction fee")
             print(f"{len(transactions)+1}. Back to main menu")
             user_choice = input(f"Enter up to 4 transaction numbers to include, separated by spaces: ").split()
             if len(user_choice) > 4:
@@ -147,7 +199,7 @@ class Blockchain:
             if len(user_choice) < 1:
                 print_header(username)
                 print("You want to select no transactions?")
-                choice = input("Enter 'y' to confirm: ")
+                choice = input("Enter 'y' to confirm: ").lower()
                 if choice != "y":    
                     return                
 
@@ -155,8 +207,13 @@ class Blockchain:
                 try:
                     index = int(number) - 1
                     if index >= 0 and index < len(transactions):
-                        indices_to_remove.append(index)
-                        transactions_to_mine.append(transactions[index])
+                        # validate transaction
+                        if transactions[index].is_valid():
+                            indices_to_remove.append(index)
+                            transactions_to_mine.append(transactions[index])
+                        else:
+                            # flag invalid transaction
+                            transactions[index].validators.append((username, "invalid"))
                     else:
                         print_header(username)
                         print("Invalid input. Please enter numbers within the range.")
@@ -180,12 +237,21 @@ class Blockchain:
             sorted_transactions = sorted(filtered_transactions, key=lambda x: x.timestamp)  # Sort by timestamp
             for tx in sorted_transactions:
                 if remaining_slots > 0:
-                    transactions_to_mine.append(tx)
-                    indices_to_remove.append(transactions.index(tx))
-                    remaining_slots -= 1
+                    # validate transation
+                    if tx.is_valid():
+                        transactions_to_mine.append(tx)
+                        indices_to_remove.append(transactions.index(tx))
+                        remaining_slots -= 1
+                    else:
+                        tx.validators.append((username, "invalid"))
 
         if transactions_to_mine == []:
-            transactions_to_mine = transactions
+            for tx in transactions:
+                if tx.is_valid():
+                    transactions_to_mine.append(tx)
+                else:
+                    tx.validators.append((username, "invalid"))
+
         # Add a reward transaction for the miner
         decrypted_private_key = fetch_decrypted_private_key(username)
         public_key = get_current_user_public_key(username)
@@ -195,14 +261,16 @@ class Blockchain:
         reward_transaction.sign(decrypted_private_key)
         
         transactions_to_mine.append(reward_transaction)
-        
+
         # Create a new block with the transactions and mine it
-        new_block = Block(transactions_to_mine, self.chain[-1].hash)
+        new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
         new_block.mine(self.difficulty, username)
         self.last_mined_timestamp = time.time()
 
         chain = load_from_file("blockchain.dat")
-        new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
+        if len(chain) > 0:
+            new_block.id = len(chain)
+            new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
 
         # Add the new block to the blockchain
         self.add_block(new_block)
@@ -236,6 +304,7 @@ class Blockchain:
         if not chain:
             print_header(username)
             print("No blockchain found.")
+            return
         else:
             print_header(username)
             print("The entire blockchain: \n")
@@ -244,7 +313,7 @@ class Blockchain:
                     print(f"Genesis Block created at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
                 else:
                     block_miner = get_block_miner("blockchain.dat", chain.index(block))
-                    print(f"{chain.index(block)}. Block mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
+                    print(f"{chain.index(block)}. Block mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')} [{block.status}]")
 
         print(f"{len(chain)}. Back to main menu\n")
         
@@ -270,21 +339,23 @@ class Blockchain:
 
     def _view_block(self, chain, block_index, username=None):
         options = [
-        {"option": "1", "text": "back to blockchain", "action": lambda: self.view_blockchain()},
+        {"option": "1", "text": "Back to blockchain", "action": lambda: self.view_blockchain()},
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)
         block_miner = get_block_miner("blockchain.dat", block_index)
-
-        transactions_to_display =  f"Block {block_index}: \n\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}\n\n"
-
-        transactions_to_display += f"All Transactions in block: \n\n"
+        validators = chain[block_index].validators
+        transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nStatus: {chain[block_index].status}\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}"
+        if len(validators) > 0:
+            for val in validators:
+                transactions_to_display += f"\n🏳️  Flagged {val[1]} by {val[0]}"
+        transactions_to_display += f"\n\nAll Transactions in block: \n\n"
 
         for tx in transactions:
-                if len(tx) == 7:
-                    transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[2]} to {tx[3]} including a transaction fee of {tx[4]} coin(s)\n")
-                else:
-                    transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n")
+            if len(tx) == 6:
+                transactions_to_display += (f"Normal Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s)\n")
+            else:
+                transactions_to_display += (f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n")
                     
 
         display_menu_and_get_choice(options, username, transactions_to_display)

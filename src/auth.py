@@ -3,7 +3,8 @@ import re
 import getpass
 from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
-from utils import display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
+from block_validation import automatic_tasks
+from utils import BLOCK_STATUS, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file
@@ -128,6 +129,7 @@ class User:
         retrieved_user =self.db.fetch('SELECT password FROM users WHERE username=?', (username, ))
 
         if retrieved_user and self.verify_password(retrieved_user[0][0], password):
+            automatic_tasks(username)
             print_header(username)
             print('Login successful')
             self.current_user = username
@@ -234,10 +236,13 @@ class User:
             return
 
         # check if enough balance
-        transactions = load_from_file("transactions.dat")
+        chain = load_from_file("blockchain.dat")
         public_key = get_current_user_public_key(self.current_user)
-        balance = calculate_balance(public_key, transactions)
-        if balance < amount_to_transfer + transaction_fee:
+        user_balance = 0
+        for block in chain:
+            if block.status == BLOCK_STATUS[1]:
+                user_balance += calculate_balance(public_key, block.transactions)
+        if user_balance < amount_to_transfer + transaction_fee:
             print_header(self.current_user)
             print("Insufficient balance")
             return
