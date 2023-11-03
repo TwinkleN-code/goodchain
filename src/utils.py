@@ -1,11 +1,12 @@
 import os
 from cryptography.exceptions import *
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
 from storage import load_from_file, save_to_file
+
+BLOCK_STATUS = ["pending", "verified", "rejected"]
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -187,10 +188,39 @@ def remove_from_file(filename, index):
     return False
         
 def view_balance(username):
-        transactions = load_from_file("transactions.dat")
+        pool_transactions = load_from_file("transactions.dat")
         public_key = get_current_user_public_key(username)
-        user_balance = calculate_balance(public_key, transactions)
-        print(f"Balance: {user_balance} coins. \n")
+
+        #pending balance
+        pending_balance = 0
+        #in transaction pool
+        if pool_transactions:
+            for tx in pool_transactions:
+                if tx.input:
+                    input_addr, tx_amount = tx.input
+                    if input_addr == public_key:
+                        pending_balance += tx_amount
+                        pending_balance += tx.fee
+       
+        #balance from validated blocks
+        chain = load_from_file("blockchain.dat")
+        user_balance = 0
+        for block in chain:
+            if block.status == BLOCK_STATUS[1]:
+                user_balance += calculate_balance(public_key, block.transactions)
+            elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
+                for tx in block.transactions:
+                    if tx.input:
+                        input_addr, tx_amount = tx.input
+                        if input_addr == public_key:
+                            pending_balance += tx_amount
+                            pending_balance += tx.fee  
+        
+        print(f"Available balance: {user_balance} coins") 
+        if pending_balance > 0: 
+            print(f"Pending outgoing: {pending_balance} coins")
+        print("\n")
+
 
 def calculate_balance(user_public_key, transactions):
     balance = 0
@@ -205,3 +235,5 @@ def calculate_balance(user_public_key, transactions):
                 balance -= tx_amount
                 balance -= tx.fee 
     return balance
+
+    
