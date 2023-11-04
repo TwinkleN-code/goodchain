@@ -86,12 +86,16 @@ class Transaction:
             for tx in transactions:
                 if len(tx) == 8:
                     if len(tx[7]) > 0: #if there are invalid flags in the transaction
-                        names = ", ".join([name for name, _ in tx[7]]) if len(tx[[7]]) > 1 else tx[7][0][0]
-                        transactions_to_display += f"Invalid Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s)\nFlagged invalid by: {names}\n"
+                        names = ", ".join([name for name, _ in tx[7]]) if len(tx[7]) > 1 else tx[7][0][0]
+                        transactions_to_display += f"Normal Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s). \n ↳ flagged invalid by: {names}\n"
                     else:
                         transactions_to_display += f"Normal Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s)\n"
                 else:
-                    transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n"
+                    if len(tx[5]) > 0:
+                        names = ", ".join([name for name, _ in tx[5]]) if len(tx[5]) > 1 else tx[5][0][0]
+                        transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n ↳ flagged invalid by: {names}\n"
+                    else:
+                        transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n"
             
             display_menu_and_get_choice(options, username, transactions_to_display)
 
@@ -129,4 +133,3 @@ def cancel_invalid_transactions(username):
             
 
 #cancel_invalid_transactions("admin")
-
