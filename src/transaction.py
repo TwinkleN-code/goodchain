@@ -117,19 +117,18 @@ class Transaction:
 def cancel_invalid_transactions(username):
     pool_transactions = load_from_file("transactions.dat")
     public_key = get_current_user_public_key(username)
-    index = 0
+    
     if pool_transactions:
-        for tx in pool_transactions:
+        for tx in reversed(pool_transactions):
             if tx.input:
                 if tx.input[0] == public_key:
                     if len(tx.validators) > 0:
+                        index = pool_transactions.index(tx)
                         # delete from pool
-                        remove_from_file("transactions.dat", index)
+                        remove_from_file("transactions.dat", index)                   
             elif tx.input == None: # if there is an invalid reward transaction
                 if tx.output[0] == public_key:
                     if len(tx.validators) > 0:
                         remove_from_file("transactions.dat", index)
-            index += 1
             
-
-#cancel_invalid_transactions("admin")
+            
