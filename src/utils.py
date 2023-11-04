@@ -148,7 +148,7 @@ def get_all_transactions(filename):
             get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
             user_transactions.append([count, tx.input[1], get_receiver_username[0][0], get_sender_username[0][0], tx.fee, tx.type, tx.timestamp, tx.validators])
         else:
-            user_transactions.append([count, tx.output[1], get_receiver_username[0][0], tx.type, tx.timestamp])
+            user_transactions.append([count, tx.output[1], get_receiver_username[0][0], tx.type, tx.timestamp, tx.validators])
         count += 1
 
     return user_transactions

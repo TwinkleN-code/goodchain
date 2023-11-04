@@ -86,12 +86,16 @@ class Transaction:
             for tx in transactions:
                 if len(tx) == 8:
                     if len(tx[7]) > 0: #if there are invalid flags in the transaction
-                        names = ", ".join([name for name, _ in tx[7]]) if len(tx[[7]]) > 1 else tx[7][0][0]
-                        transactions_to_display += f"Invalid Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s)\nFlagged invalid by: {names}\n"
+                        names = ", ".join([name for name, _ in tx[7]]) if len(tx[7]) > 1 else tx[7][0][0]
+                        transactions_to_display += f"Normal Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s). \n ↳ flagged invalid by: {names}\n"
                     else:
                         transactions_to_display += f"Normal Transaction: {tx[1]} coin(s) sent from {tx[3]} to {tx[2]} including a transaction fee of {tx[4]} coin(s)\n"
                 else:
-                    transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n"
+                    if len(tx[5]) > 0:
+                        names = ", ".join([name for name, _ in tx[5]]) if len(tx[5]) > 1 else tx[5][0][0]
+                        transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n ↳ flagged invalid by: {names}\n"
+                    else:
+                        transactions_to_display += f"Reward Transaction: {tx[1]} coins credited to {tx[2]}\n"
             
             display_menu_and_get_choice(options, username, transactions_to_display)
 
@@ -113,20 +117,18 @@ class Transaction:
 def cancel_invalid_transactions(username):
     pool_transactions = load_from_file("transactions.dat")
     public_key = get_current_user_public_key(username)
-    index = 0
+    
     if pool_transactions:
-        for tx in pool_transactions:
+        for tx in reversed(pool_transactions):
             if tx.input:
                 if tx.input[0] == public_key:
                     if len(tx.validators) > 0:
+                        index = pool_transactions.index(tx)
                         # delete from pool
-                        remove_from_file("transactions.dat", index)
+                        remove_from_file("transactions.dat", index)                   
             elif tx.input == None: # if there is an invalid reward transaction
                 if tx.output[0] == public_key:
                     if len(tx.validators) > 0:
                         remove_from_file("transactions.dat", index)
-            index += 1
             
-
-#cancel_invalid_transactions("admin")
-
+            

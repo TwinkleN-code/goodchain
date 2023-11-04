@@ -2,7 +2,7 @@ import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from block_validation import last_block_status
-from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL
+from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
 from utils import *
@@ -161,6 +161,7 @@ class Blockchain:
         # add 3 minutes time interval
         current_timestamp = time.time()
         time_since_last_mine = current_timestamp - self.last_mined_timestamp
+        invalid_tx = []
         if time_since_last_mine < 180:  # 180 seconds = 3 minutes
             print_header(username)
             print(f"Too soon to mine again. Please wait {180 - time_since_last_mine:.0f} more seconds.")
@@ -207,13 +208,18 @@ class Blockchain:
                 try:
                     index = int(number) - 1
                     if index >= 0 and index < len(transactions):
-                        # validate transaction
-                        if transactions[index].is_valid():
-                            indices_to_remove.append(index)
-                            transactions_to_mine.append(transactions[index])
-                        else:
-                            # flag invalid transaction
-                            transactions[index].validators.append((username, "invalid"))
+                        check_if_already_validated = any(name == username for name, _ in transactions[index].validators)
+                        if not check_if_already_validated:
+                            # validate transaction
+                            if transactions[index].is_valid():
+                                indices_to_remove.append(index)
+                                transactions_to_mine.append(transactions[index])
+                            else:
+                                # flag invalid transaction
+                                transactions[index].validators.append((username, "invalid"))
+                                # remove and update the transaction
+                                indices_to_remove.append(index)
+                                invalid_tx.append(transactions[index])
                     else:
                         print_header(username)
                         print("Invalid input. Please enter numbers within the range.")
@@ -237,66 +243,72 @@ class Blockchain:
             sorted_transactions = sorted(filtered_transactions, key=lambda x: x.timestamp)  # Sort by timestamp
             for tx in sorted_transactions:
                 if remaining_slots > 0:
-                    # validate transation
-                    if tx.is_valid():
-                        transactions_to_mine.append(tx)
-                        indices_to_remove.append(transactions.index(tx))
-                        remaining_slots -= 1
-                    else:
-                        tx.validators.append((username, "invalid"))
+                    check_if_already_validated = any(name == username for name, _ in tx.validators)
+                    if not check_if_already_validated:
+                        # validate transation
+                        if tx.is_valid():
+                            transactions_to_mine.append(tx)
+                            indices_to_remove.append(transactions.index(tx))
+                            remaining_slots -= 1
+                        else:
+                            tx.validators.append((username, "invalid"))
+                            indices_to_remove.append(transactions.index(tx)) 
+                            invalid_tx.append(transactions[index])
+                else:
+                    break
 
         if transactions_to_mine == []:
             for tx in transactions:
-                if tx.is_valid():
-                    transactions_to_mine.append(tx)
-                else:
-                    tx.validators.append((username, "invalid"))
+                check_if_already_validated = any(name == username for name, _ in tx.validators)
+                if not check_if_already_validated:
+                    if tx.is_valid():
+                        transactions_to_mine.append(tx)
+                        indices_to_remove.append(transactions.index(tx))
+                    else:
+                        tx.validators.append((username, "invalid"))
+                        indices_to_remove.append(transactions.index(tx))
+                        invalid_tx.append(tx)
 
-        # Add a reward transaction for the miner
-        decrypted_private_key = fetch_decrypted_private_key(username)
-        public_key = get_current_user_public_key(username)
-        reward_transaction = Transaction(type = REWARD)
-        # Since it's a reward, there are no inputs. 
-        reward_transaction.add_output(public_key, REWARD_VALUE)
-        reward_transaction.sign(decrypted_private_key)
-        
-        transactions_to_mine.append(reward_transaction)
-
-        # Create a new block with the transactions and mine it
-        new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
-        new_block.mine(self.difficulty, username)
-        self.last_mined_timestamp = time.time()
-
-        chain = load_from_file("blockchain.dat")
-        if len(chain) > 0:
-            new_block.id = len(chain)
-            new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
-
-        # Add the new block to the blockchain
-        self.add_block(new_block)
-        if indices_to_remove == []:
-            for tx in transactions[:-1]:  # Remove transactions in reverse order to maintain correct indices
-                if tx.type == NORMAL:
-                    public_key_sender = tx.input[0]
-                    amount = tx.input[1]
-                    public_key_receiver = tx.output[0]
-                    fee = tx.fee
-
-                    index = find_index_from_file("transactions.dat", amount, public_key_sender, public_key_receiver, fee)
-                    if index is not None:
-                        indices_to_remove.append(index)
-                else:
-                    public_key_receiver = tx.output[0]
-                    index = find_index_from_file_by_public_key("transactions.dat", public_key_receiver)
-                    if index is not None:
-                        indices_to_remove.append(index)
-        
-            for index in sorted(indices_to_remove, reverse=True):
-                remove_from_file("transactions.dat", index)
-
+        #if all transactions from pool are invalid, there is nothing to mine
+        if transactions_to_mine == [] and indices_to_remove == []:
+            print("There are no valid transactions to mine")
+            return
+        # if there are invalid transactions found and there is no valid transaction to mine
+        elif transactions_to_mine == [] and indices_to_remove != []: 
+            # updated invalid transactions
+            print("There are no valid transactions to mine")
         else:
-            for index in sorted(indices_to_remove, reverse=True):
-                remove_from_file("transactions.dat", index)
+            # Add a reward transaction for the miner
+            decrypted_private_key = fetch_decrypted_private_key(username)
+            public_key = get_current_user_public_key(username)
+            reward_transaction = Transaction(type = REWARD)
+            # Since it's a reward, there are no inputs. 
+            reward_transaction.add_output(public_key, REWARD_VALUE)
+            reward_transaction.sign(decrypted_private_key)
+            
+            transactions_to_mine.append(reward_transaction)
+            
+            # Create a new block with the transactions and mine it
+            new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
+            new_block.mine(self.difficulty, username)
+            self.last_mined_timestamp = time.time()
+
+            chain = load_from_file("blockchain.dat")
+            if len(chain) > 0:
+                new_block.id = len(chain)
+                new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
+
+            # Add the new block to the blockchain
+            self.add_block(new_block)
+
+        #removing transactions from pool
+        for index in sorted(indices_to_remove, reverse=True):
+            remove_from_file("transactions.dat", index)
+        
+        #update invalid transactions
+        if invalid_tx:
+            for tx in invalid_tx:
+                transaction_pool.add_transaction(tx)
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")

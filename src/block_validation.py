@@ -31,14 +31,14 @@ def block_valid(current_user):
         
         # check if there are enough validators
         if len(chain[-1].validators) >= 3:
-            check_validators(chain, current_user, miner_username)
+            check_validators(chain, miner_username)
         else:
             #update in file
             save_to_file(chain, "blockchain.dat")
     return
 
 
-def check_validators(chain, current_user, miner_username):
+def check_validators(chain, miner_username):
     invalid_flags = 0
     valid_flags = 0
 
