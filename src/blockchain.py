@@ -57,7 +57,8 @@ class Block:
             return False
         
         #check the hash of the current block
-        if self.hash != self.compute_hash():
+        calculate_hash = self.compute_hash()
+        if self.hash != calculate_hash:
             return False
 
         #check if block's hash meets the difficulty requirement
@@ -289,14 +290,13 @@ class Blockchain:
             transactions_to_mine.append(reward_transaction)
             
             # Create a new block with the transactions and mine it
-            new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
+            load_chain = load_from_file("blockchain.dat")
+            if len(load_chain) > 0:
+                new_block = Block(transactions_to_mine, load_chain[-1].hash, len(load_chain))
+            else:  
+                new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
             new_block.mine(self.difficulty, username)
             self.last_mined_timestamp = time.time()
-
-            chain = load_from_file("blockchain.dat")
-            if len(chain) > 0:
-                new_block.id = len(chain)
-                new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
 
             # Add the new block to the blockchain
             self.add_block(new_block)

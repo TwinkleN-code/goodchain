@@ -191,17 +191,11 @@ def view_balance(username):
         pool_transactions = load_from_file("transactions.dat")
         public_key = get_current_user_public_key(username)
 
-        #pending balance
+        #pending balance from pool
         pending_balance = 0
-        #in transaction pool
         if pool_transactions:
-            for tx in pool_transactions:
-                if tx.input:
-                    input_addr, tx_amount = tx.input
-                    if input_addr == public_key:
-                        pending_balance += tx_amount
-                        pending_balance += tx.fee
-       
+            pending_balance += calculate_pending_balance(public_key, pool_transactions)
+
         #balance from validated blocks
         chain = load_from_file("blockchain.dat")
         user_balance = 0
@@ -209,12 +203,7 @@ def view_balance(username):
             if block.status == BLOCK_STATUS[1]:
                 user_balance += calculate_balance(public_key, block.transactions)
             elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
-                for tx in block.transactions:
-                    if tx.input:
-                        input_addr, tx_amount = tx.input
-                        if input_addr == public_key:
-                            pending_balance += tx_amount
-                            pending_balance += tx.fee  
+                pending_balance += calculate_pending_balance(public_key, block.transactions)
         
         print(f"Available balance: {user_balance} coins") 
         if pending_balance > 0: 
@@ -233,5 +222,15 @@ def calculate_balance(user_public_key, transactions):
             input_addr, tx_amount = tx.input
             if input_addr == user_public_key:
                 balance -= tx_amount
-                balance -= tx.fee 
+    return balance
+
+def calculate_pending_balance(public_key, transactions):
+    balance = 0
+    for tx in transactions:
+        if tx.input:
+            input_addr, tx_amount = tx.input
+            if input_addr == public_key:
+                balance += tx_amount
+                balance += tx.fee
+
     return balance
