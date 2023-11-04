@@ -67,8 +67,9 @@ def check_validators(chain, miner_username):
 
     elif invalid_flags >= 3:
         chain[-1].status = BLOCK_STATUS[2]
+        list_transactions = chain[-1].transactions
         # put transactions back in pool
-        for tx in chain[-1].transactions:
+        for tx in list_transactions[:-1]: #skips the reward transaction of miner
             transaction_pool.add_transaction(tx)
 
         # remove block from blockchain
