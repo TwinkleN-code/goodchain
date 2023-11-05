@@ -16,6 +16,10 @@ class Database:
                             privatekey TEXT NOT NULL,
                             publickey TEXT NOT NULL,
                             phrase TEXT NOT NULL)''')
+        self.execute(''' CREATE TABLE IF NOT EXISTS notifications (
+                            ID INTEGER,
+                            notification TEXT,
+                            FOREIGN KEY (ID) REFERENCES users(ID))''')
         
     def _execute(self, query, params=None, fetch=False):
         with self._connect() as conn:

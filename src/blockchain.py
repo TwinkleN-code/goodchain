@@ -2,6 +2,7 @@ import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from block_validation import last_block_status
+from notifications import notification
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
@@ -309,6 +310,10 @@ class Blockchain:
         if invalid_tx:
             for tx in invalid_tx:
                 transaction_pool.add_transaction(tx)
+
+        #add notification to user
+        notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
+        notification.add_notification(username, f"pending reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")

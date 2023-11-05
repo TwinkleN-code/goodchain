@@ -1,3 +1,5 @@
+from notifications import notification
+from database import Database
 from utils import get_current_user_public_key, remove_from_file, sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
 from storage import save_to_file, load_from_file
 import time
@@ -120,6 +122,7 @@ class Transaction:
                 f"END\n")
     
 def cancel_invalid_transactions(username):
+    db = Database()
     pool_transactions = load_from_file("transactions.dat")
     public_key = get_current_user_public_key(username)
     
@@ -130,10 +133,15 @@ def cancel_invalid_transactions(username):
                     if len(tx.validators) > 0:
                         index = pool_transactions.index(tx)
                         # delete from pool
-                        remove_from_file("transactions.dat", index)                   
+                        remove_from_file("transactions.dat", index) 
+                        #notify user
+                        receiver = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                        notification.add_notification(username, f"rejected transaction: {tx.input[1]} coin(s) to {receiver[0][0]}")                
             elif tx.input == None: # if there is an invalid reward transaction
                 if tx.output[0] == public_key:
                     if len(tx.validators) > 0:
                         remove_from_file("transactions.dat", index)
+                        receiver = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                        notification.add_notification(username, f"reward of {tx.input[1]} coin(s) rejected")   
             
             
