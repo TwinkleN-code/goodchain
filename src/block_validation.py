@@ -1,5 +1,6 @@
 from keys import fetch_decrypted_private_key
 from database import Database
+from notifications import notification
 from transaction import REWARD, Transaction, cancel_invalid_transactions, transaction_pool
 from utils import get_block_miner, get_current_user_public_key, remove_from_file, BLOCK_STATUS
 from storage import load_from_file, save_to_file
@@ -41,6 +42,7 @@ def block_valid(current_user):
 def check_validators(chain, miner_username):
     invalid_flags = 0
     valid_flags = 0
+    db = Database()
 
     for validator in chain[-1].validators:
         if validator[1] == "valid":
@@ -52,7 +54,6 @@ def check_validators(chain, miner_username):
         for tx in chain[-1].transactions:
             #send transaction fee to miner if transaction type is not reward
             if tx.input != None:
-                db = Database()
                 get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
                 sender_private_key = fetch_decrypted_private_key(get_sender_username[0][0])
                 public_key_receiver = get_current_user_public_key(miner_username)
@@ -61,18 +62,37 @@ def check_validators(chain, miner_username):
                 transaction.add_output(public_key_receiver,tx.fee)
                 transaction.sign(sender_private_key)
                 transaction_pool.add_transaction(transaction)
+
+                #notify succesful transactions 
+                receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                notification.add_notification(get_sender_username[0][0], f"successful transaction: {tx.input[1]} coin(s) to {receiver_username[0][0]}")
+                notification.add_notification(get_sender_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}")
+            else:
+                #reward notification
+                get_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                notification.add_notification(get_username[0][0], f"reward of {tx.output[1]} coin(s) added to you balance")
         
         #change status of block 
         chain[-1].status = BLOCK_STATUS[1]
 
+        #send notification
+        notification.add_notification_to_all_users(f"block with id {chain[-1].id} verified", miner_username)
+        notification.add_notification_to_all_users(f"new size of blockchain: {len(chain)}")
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} status changed from {BLOCK_STATUS[0]} to {BLOCK_STATUS[1]}")
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is verified")
+
     elif invalid_flags >= 3:
         chain[-1].status = BLOCK_STATUS[2]
+        list_transactions = chain[-1].transactions
         # put transactions back in pool
-        for tx in chain[-1].transactions:
+        for tx in list_transactions[:-1]: #skips the reward transaction of miner
             transaction_pool.add_transaction(tx)
 
         # remove block from blockchain
         remove_from_file("blockchain.dat", len(chain)-1)
+
+        #notify user's rejected block
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
         return
 
     #update in file

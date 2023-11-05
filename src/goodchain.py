@@ -2,6 +2,7 @@ import os
 import pickle
 from auth import User
 from database import Database
+from notifications import notification
 from transaction import Transaction
 from keys import *
 from recover_key import recover_private_key
@@ -34,8 +35,9 @@ def display_menu(is_logged_in):
             {"option": "6", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
             {"option": "7", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},
             {"option": "8", "text": "Mine transactions", "action": lambda: blockchain.mine_transactions(user.current_user)},
-            {"option": "9", "text": "Logout", "action": lambda: user.logout()},
-            {"option": "10", "text": "Exit application", "action": lambda: "exit"}
+            {"option": "9", "text": "View notifications", "action": lambda: notification.view_notifications(user.current_user)},
+            {"option": "10", "text": "Logout", "action": lambda: user.logout()},
+            {"option": "11", "text": "Exit application", "action": lambda: "exit"}
         ]
     else:
         return [

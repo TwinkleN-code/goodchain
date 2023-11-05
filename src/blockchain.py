@@ -2,6 +2,7 @@ import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from block_validation import last_block_status
+from notifications import notification
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
 from keys import fetch_decrypted_private_key
 from storage import load_from_file, save_to_file
@@ -57,7 +58,8 @@ class Block:
             return False
         
         #check the hash of the current block
-        if self.hash != self.compute_hash():
+        calculate_hash = self.compute_hash()
+        if self.hash != calculate_hash:
             return False
 
         #check if block's hash meets the difficulty requirement
@@ -289,14 +291,13 @@ class Blockchain:
             transactions_to_mine.append(reward_transaction)
             
             # Create a new block with the transactions and mine it
-            new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
+            load_chain = load_from_file("blockchain.dat")
+            if len(load_chain) > 0:
+                new_block = Block(transactions_to_mine, load_chain[-1].hash, len(load_chain))
+            else:  
+                new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
             new_block.mine(self.difficulty, username)
             self.last_mined_timestamp = time.time()
-
-            chain = load_from_file("blockchain.dat")
-            if len(chain) > 0:
-                new_block.id = len(chain)
-                new_block.previous_hash = chain[-1].hash  # Update the previous_hash after mining
 
             # Add the new block to the blockchain
             self.add_block(new_block)
@@ -309,6 +310,10 @@ class Blockchain:
         if invalid_tx:
             for tx in invalid_tx:
                 transaction_pool.add_transaction(tx)
+
+        #add notification to user
+        notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
+        notification.add_notification(username, f"pending reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")
