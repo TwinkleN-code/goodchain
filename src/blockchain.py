@@ -302,6 +302,10 @@ class Blockchain:
             # Add the new block to the blockchain
             self.add_block(new_block)
 
+            #add notification to user
+            notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
+            notification.add_notification(username, f"pending reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
+
         #removing transactions from pool
         for index in sorted(indices_to_remove, reverse=True):
             remove_from_file("transactions.dat", index)
@@ -310,10 +314,6 @@ class Blockchain:
         if invalid_tx:
             for tx in invalid_tx:
                 transaction_pool.add_transaction(tx)
-
-        #add notification to user
-        notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
-        notification.add_notification(username, f"pending reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
     def view_blockchain(self, username=None):
         chain = load_from_file("blockchain.dat")
