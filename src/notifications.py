@@ -1,22 +1,24 @@
 from datetime import datetime
-from keys import read_key
+from keys import decrypt, encrypt, read_key
 from database import Database
 from utils import display_menu_and_get_choice, print_header
 
 class Notification:
     def __init__(self):
         self.db = Database()
+        self.database_key = read_key()
 
     def view_notifications(self, username):
-        database_key = read_key()
         id = self.get_user_id(username)
         notifications = self.db.fetch('SELECT notification FROM notifications WHERE ID=?', (id, ))
         if not notifications:
             print_header()
             print("Your notifications are empty")
             return
+        print("\nYour notifications:\n")
         for notif in reversed(notifications):
-            print(notif[0])
+            decrypted_notif = decrypt(notif[0], self.database_key)
+            print(decrypted_notif)
 
         options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
         choice_result = display_menu_and_get_choice(options)
@@ -25,8 +27,10 @@ class Notification:
         
     def add_notification(self, username, message):
         notif = self.get_current_time() + ": " + message
+        #encrypt info
+        encrypted_notif = encrypt(notif, self.database_key)
         id = self.get_user_id(username)
-        self.db.execute('INSERT INTO notifications (ID, notification) VALUES (?, ?)', (id, notif))
+        self.db.execute('INSERT INTO notifications (ID, notification) VALUES (?, ?)', (id, encrypted_notif))
 
     def add_notification_to_all_users(self, message, exclude_user=None):            
         list_user = self.get_all_users()

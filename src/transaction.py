@@ -136,7 +136,7 @@ def cancel_invalid_transactions(username):
                         remove_from_file("transactions.dat", index) 
                         #notify user
                         receiver = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
-                        notification.add_notification(username, f"rejected transaction: {tx.input[1]} coin(s) to {receiver[0][0]}")                
+                        notification.add_notification(username, f"rejected transaction: send {tx.input[1]} coin(s) to {receiver[0][0]} including transaction fee of {tx.fee} coins")                
             elif tx.input == None: # if there is an invalid reward transaction
                 if tx.output[0] == public_key:
                     if len(tx.validators) > 0:

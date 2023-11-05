@@ -505,4 +505,4 @@ class User:
             else:
                 print_header(self.current_user)
                 print('Could not modify transaction')
-                return
+                return  

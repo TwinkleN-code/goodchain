@@ -22,31 +22,20 @@ def generate_keys():
     return pr_ser, pbc_ser
 
 
-def encrypt(message, public_key):
+def encrypt(message, key):
     try:
-        #convert to bytes
-        if not isinstance(message, bytes):
-            message = message.encode('utf-8')
-
-        ciphertext = public_key.encrypt(
-            message, 
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(), 
-                label=None
-            )
-        )
-        return ciphertext
+        fernet = Fernet(key)
+        encrypted_message = fernet.encrypt(message.encode())
+        return encrypted_message
     except Exception as e:
         print("Exception: " + str(e))
         return ""
 
-def decrypt(ciphertext, private_key):
+def decrypt(encrypted_message, key):
     try:
-        text = private_key.decrypt(ciphertext,
-                            padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                            algorithm=hashes.SHA256(), label=None))
-        return text.decode('utf-8')
+        fernet = Fernet(key)
+        decrypted_message = fernet.decrypt(encrypted_message).decode()
+        return decrypted_message
     except Exception as e:
         print("Exception: " + str(e))
         return ""
