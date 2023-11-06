@@ -2,7 +2,7 @@ from database import Database
 from notifications import notification
 from blockchain import Blockchain
 from transaction import REWARD, cancel_invalid_transactions, transaction_pool
-from utils import get_block_miner, remove_from_file, BLOCK_STATUS
+from utils import get_block_miner, print_header, remove_from_file, BLOCK_STATUS
 from storage import load_from_file, save_to_file
 
 
@@ -57,7 +57,7 @@ def check_validators(chain, miner_username):
                 get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
                 receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
                 notification.add_notification(get_sender_username[0][0], f"successful transaction: {tx.input[1]} coin(s) to {receiver_username[0][0]}")
-                notification.add_notification(get_sender_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}")
+                notification.add_notification(receiver_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}")
             else:
                 #reward notification
                 get_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
@@ -99,10 +99,14 @@ def automatic_tasks(username):
 
 
 
-def validation_chain():
+def validation_chain(current_user):
     block_chain = Blockchain()
     block_chain.chain = load_from_file("blockchain.dat")
-    if block_chain.blockchain_is_valid():
+    result = block_chain.blockchain_is_valid(current_user)
+    if len(result) == 0:
+        print_header()
         print("Blockchain has valid blocks")
     else:
-        print("Blockchain has invalid block(s)")
+        result_str = ', '.join(map(str, result))
+        print_header()
+        print(f"Blocks with id: {result_str} are invalid")

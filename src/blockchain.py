@@ -9,7 +9,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 5
+DIFFICULTY = 4
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
         self.id = block_id
@@ -114,7 +114,8 @@ class Blockchain:
             # If the file does not exist, return a default value of 0
             return 0
         
-    def blockchain_is_valid(self):
+    def blockchain_is_valid(self, current_user):
+        invalid_blocks = []
         # Check for genesis block
         if not self.chain:
             return True
@@ -136,28 +137,42 @@ class Blockchain:
             # 1. Check the previous_hash of the current block
             if current_block.previous_hash != previous_hash:
                 print(f"Previous block hash in block {i} doesn't match with stored previous hash value.")
-                return False
+                current_block.validators.append((current_user, "invalid"))  
+                if current_block.id not in invalid_blocks:  
+                    invalid_blocks.append(current_block.id)
 
             # 2. Check the hash of the current block
             if current_block.hash != current_hash:
                 print(f"Hash of the block {i} is not valid.")
-                return False
+                current_block.validators.append((current_user, "invalid"))  
+                if current_block.id not in invalid_blocks:  
+                    invalid_blocks.append(current_block.id)
 
 
             # 3. Check if block's hash meets the difficulty requirement
             if not current_hash[:self.difficulty] == '0' * self.difficulty:
                 print(f"Hash value in block {i} doesn't meet the difficulty requirements.")
-                return False
+                # return False
+                current_block.validators.append((current_user, "invalid"))
+                if current_block.id not in invalid_blocks:  
+                    invalid_blocks.append(current_block.id)
 
             # 4. Validate all transactions in the block
             for transaction in current_block.transactions:
                 if not transaction.is_valid():
                     print(f"Transaction {transaction} in block {i} is not valid.")
-                    return False
+                    # return False
+                    current_block.validators.append((current_user, "invalid"))
+                    if current_block.id not in invalid_blocks:  
+                        invalid_blocks.append(current_block.id)
                 
             previous_hash = current_hash
 
-        return True
+        #update in file
+        if invalid_blocks:
+            save_to_file(self.chain, "blockchain.dat")
+            
+        return invalid_blocks
 
     def mine_transactions(self, username):
         # add 3 minutes time interval
