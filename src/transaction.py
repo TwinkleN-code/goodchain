@@ -1,6 +1,6 @@
 from notifications import notification
 from database import Database
-from utils import get_current_user_public_key, remove_from_file, sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
+from utils import BLOCK_STATUS, calculate_balance, calculate_pending_balance, get_current_user_public_key, remove_from_file, sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
 from storage import save_to_file, load_from_file
 import time
 
@@ -66,6 +66,25 @@ class Transaction:
         
         # Check if the signature is valid for the given input address
         if not self._has_valid_signature(self._prepare_data_for_signature(), self.input[0]):
+            return False
+        
+        # check if enough balance
+        chain = load_from_file("blockchain.dat")
+        pool_transactions = load_from_file("transactions.dat")
+        available_balance = 0
+        pending_balance = 0
+        for block in chain:
+            if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == self.input[0]:
+                available_balance += calculate_balance(self.input[0], block.transactions, True)
+            elif block.status == BLOCK_STATUS[1]:
+                available_balance += calculate_balance(self.input[0], block.transactions)
+            elif block.status == BLOCK_STATUS[0]:
+                pending_balance += calculate_pending_balance(self.input[0], block.transactions)
+
+        if pool_transactions:
+            pending_balance += calculate_pending_balance(self.input[0],pool_transactions)
+
+        if (self.input[1] + self.fee) > (available_balance - pending_balance):
             return False
 
         return True
