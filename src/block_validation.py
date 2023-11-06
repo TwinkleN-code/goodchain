@@ -1,8 +1,8 @@
-from keys import fetch_decrypted_private_key
 from database import Database
 from notifications import notification
-from transaction import REWARD, Transaction, cancel_invalid_transactions, transaction_pool
-from utils import get_block_miner, get_current_user_public_key, remove_from_file, BLOCK_STATUS
+from blockchain import Blockchain
+from transaction import REWARD, cancel_invalid_transactions, transaction_pool
+from utils import get_block_miner, remove_from_file, BLOCK_STATUS
 from storage import load_from_file, save_to_file
 
 
@@ -52,18 +52,9 @@ def check_validators(chain, miner_username):
 
     if valid_flags >= 3:
         for tx in chain[-1].transactions:
-            #send transaction fee to miner if transaction type is not reward
-            if tx.input != None:
-                get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
-                sender_private_key = fetch_decrypted_private_key(get_sender_username[0][0])
-                public_key_receiver = get_current_user_public_key(miner_username)
-                transaction = Transaction(0, 0)
-                transaction.add_input(tx.input[0], tx.fee)
-                transaction.add_output(public_key_receiver,tx.fee)
-                transaction.sign(sender_private_key)
-                transaction_pool.add_transaction(transaction)
-
+            if tx.input != None:            
                 #notify succesful transactions 
+                get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
                 receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
                 notification.add_notification(get_sender_username[0][0], f"successful transaction: {tx.input[1]} coin(s) to {receiver_username[0][0]}")
                 notification.add_notification(get_sender_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}")
@@ -106,8 +97,12 @@ def automatic_tasks(username):
     # check if user has invalid transactions and cancel it
     cancel_invalid_transactions(username)
 
-def last_block_status():
-    chain = load_from_file("blockchain.dat")
-    if chain:
-        return chain[-1].status
-    return None
+
+
+def validation_chain():
+    block_chain = Blockchain()
+    block_chain.chain = load_from_file("blockchain.dat")
+    if block_chain.blockchain_is_valid():
+        print("Blockchain has valid blocks")
+    else:
+        print("Blockchain has invalid block(s)")

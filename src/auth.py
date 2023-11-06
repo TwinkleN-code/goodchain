@@ -241,9 +241,11 @@ class User:
         available_balance = 0
         pending_balance = 0
         for block in chain:
-            if block.status == BLOCK_STATUS[1]: 
+            if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
+                available_balance += calculate_balance(public_key, block.transactions, True)
+            elif block.status == BLOCK_STATUS[1]:
                 available_balance += calculate_balance(public_key, block.transactions)
-            elif block.status == BLOCK_STATUS[0]:
+            elif block.status == BLOCK_STATUS[0]: 
                 pending_balance += calculate_pending_balance(public_key, block.transactions) 
 
         pool_transactions = load_from_file("transactions.dat")
@@ -424,10 +426,12 @@ class User:
                 temp_amount = transactions[tx_choice][1]
                 del pool_transactions[index] # skip the editting transaction when calculating balance
                 for block in chain:
-                    if block.status == BLOCK_STATUS[1]: 
+                    if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
+                        available_balance += calculate_balance(public_key, block.transactions, True)
+                    elif block.status == BLOCK_STATUS[1]:
                         available_balance += calculate_balance(public_key, block.transactions)
-                    elif block.status == BLOCK_STATUS[0]:
-                        pending_balance += calculate_pending_balance(public_key, block.transactions) 
+                    elif block.status == BLOCK_STATUS[0]: 
+                        pending_balance += calculate_pending_balance(public_key, block.transactions)
 
                 if pool_transactions:
                     pending_balance += calculate_pending_balance(public_key,pool_transactions)
@@ -466,10 +470,12 @@ class User:
                 temp_fee = transactions[tx_choice][3]
                 del pool_transactions[index] 
                 for block in chain:
-                    if block.status == BLOCK_STATUS[1]: 
+                    if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
+                        available_balance += calculate_balance(public_key, block.transactions, True)
+                    elif block.status == BLOCK_STATUS[1]:
                         available_balance += calculate_balance(public_key, block.transactions)
                     elif block.status == BLOCK_STATUS[0]:
-                        pending_balance += calculate_pending_balance(public_key, block.transactions) 
+                        pending_balance += calculate_pending_balance(public_key, block.transactions)
 
                 if pool_transactions:
                     pending_balance += calculate_pending_balance(public_key,pool_transactions)
