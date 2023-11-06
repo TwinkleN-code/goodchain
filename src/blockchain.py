@@ -86,7 +86,7 @@ class Blockchain:
     def create_genesis_block(self):
         # A function to generate genesis block and append it to the chain.
         genesis_block = Block([], "0", 0)
-        genesis_block.status = BLOCK_STATUS[1]
+        genesis_block.status = BLOCK_STATUS[3]
         return genesis_block
     
     def next_block_id(self):

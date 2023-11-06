@@ -6,7 +6,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
 from storage import load_from_file, save_to_file
 
-BLOCK_STATUS = ["pending", "verified", "rejected"]
+BLOCK_STATUS = ["pending", "verified", "rejected", "genesis"]
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -198,20 +198,23 @@ def view_balance(username):
 
         #balance from validated blocks
         chain = load_from_file("blockchain.dat")
-        user_balance = 0
+        available_balance = 0
         for block in chain:
-            if block.status == BLOCK_STATUS[1]:
-                user_balance += calculate_balance(public_key, block.transactions)
+            #add transaction fee to the balance
+            if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
+                available_balance += calculate_balance(public_key, block.transactions, True)
+            elif block.status == BLOCK_STATUS[1]:
+                available_balance += calculate_balance(public_key, block.transactions)
             elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
                 pending_balance += calculate_pending_balance(public_key, block.transactions)
         
-        print(f"Available balance: {user_balance} coins") 
+        print(f"Available balance: {available_balance} coins") 
         if pending_balance > 0: 
             print(f"Pending outgoing: {pending_balance} coins")
         print("\n")
 
 
-def calculate_balance(user_public_key, transactions):
+def calculate_balance(user_public_key, transactions, include_fee=False):
     balance = 0
     for tx in transactions:
         if tx.output:
@@ -222,6 +225,8 @@ def calculate_balance(user_public_key, transactions):
             input_addr, tx_amount = tx.input
             if input_addr == user_public_key:
                 balance -= tx_amount
+        if include_fee:
+                balance += tx.fee
     return balance
 
 def calculate_pending_balance(public_key, transactions):
