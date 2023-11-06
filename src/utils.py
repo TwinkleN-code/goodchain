@@ -225,6 +225,7 @@ def calculate_balance(user_public_key, transactions, include_fee=False):
             input_addr, tx_amount = tx.input
             if input_addr == user_public_key:
                 balance -= tx_amount
+                balance -=tx.fee
         if include_fee:
                 balance += tx.fee
     return balance
@@ -239,3 +240,9 @@ def calculate_pending_balance(public_key, transactions):
                 balance += tx.fee
 
     return balance
+
+def last_block_status():
+    chain = load_from_file("blockchain.dat")
+    if chain:
+        return chain[-1].status
+    return None

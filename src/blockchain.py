@@ -1,7 +1,6 @@
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
-from block_validation import last_block_status
 from notifications import notification
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
 from keys import fetch_decrypted_private_key
@@ -115,7 +114,7 @@ class Blockchain:
             # If the file does not exist, return a default value of 0
             return 0
         
-    def is_valid(self):
+    def blockchain_is_valid(self):
         # Check for genesis block
         if not self.chain:
             return True
@@ -131,22 +130,23 @@ class Blockchain:
                 if current_block.previous_hash != "0":
                     print("Genesis block's previous hash should be '0'.")
                     return False
+                previous_hash = current_block.hash
                 continue
 
             # 1. Check the previous_hash of the current block
             if current_block.previous_hash != previous_hash:
-                print("Previous block hash doesn't match with stored previous hash value.")
+                print(f"Previous block hash in block {i} doesn't match with stored previous hash value.")
                 return False
 
             # 2. Check the hash of the current block
             if current_block.hash != current_hash:
-                print("Hash of the block is not valid.")
+                print(f"Hash of the block {i} is not valid.")
                 return False
 
 
             # 3. Check if block's hash meets the difficulty requirement
             if not current_hash[:self.difficulty] == '0' * self.difficulty:
-                print("Block's hash doesn't meet the difficulty requirements.")
+                print(f"Hash value in block {i} doesn't meet the difficulty requirements.")
                 return False
 
             # 4. Validate all transactions in the block

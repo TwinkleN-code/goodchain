@@ -1,5 +1,6 @@
 from database import Database
 from notifications import notification
+from blockchain import Blockchain
 from transaction import REWARD, cancel_invalid_transactions, transaction_pool
 from utils import get_block_miner, remove_from_file, BLOCK_STATUS
 from storage import load_from_file, save_to_file
@@ -96,8 +97,12 @@ def automatic_tasks(username):
     # check if user has invalid transactions and cancel it
     cancel_invalid_transactions(username)
 
-def last_block_status():
-    chain = load_from_file("blockchain.dat")
-    if chain:
-        return chain[-1].status
-    return None
+
+
+def validation_chain():
+    block_chain = Blockchain()
+    block_chain.chain = load_from_file("blockchain.dat")
+    if block_chain.blockchain_is_valid():
+        print("Blockchain has valid blocks")
+    else:
+        print("Blockchain has invalid block(s)")
