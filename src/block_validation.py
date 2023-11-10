@@ -104,9 +104,9 @@ def validation_chain(current_user):
     block_chain.chain = load_from_file("blockchain.dat")
     result = block_chain.blockchain_is_valid(current_user)
     if len(result) == 0:
-        print_header()
+        print_header(current_user)
         print("Blockchain has valid blocks")
     else:
         result_str = ', '.join(map(str, result))
-        print_header()
+        print_header(current_user)
         print(f"Blocks with id: {result_str} are invalid")

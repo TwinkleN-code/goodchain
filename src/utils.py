@@ -198,7 +198,11 @@ def view_balance(username):
 
         #balance from validated blocks
         chain = load_from_file("blockchain.dat")
+        transactions = load_from_file("transactions.dat")
         available_balance = 0
+        for transaction in transactions:
+            if transaction.type == 1 and transaction.output[0] == public_key:
+                pending_balance += transaction.output[1]
         for block in chain:
             #add transaction fee to the balance
             if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
@@ -210,7 +214,7 @@ def view_balance(username):
         
         print(f"Available balance: {available_balance} coins") 
         if pending_balance > 0: 
-            print(f"Pending outgoing: {pending_balance} coins")
+            print(f"Balance not yet validated: {pending_balance} coins")
         print("\n")
 
 
