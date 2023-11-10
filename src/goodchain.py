@@ -38,8 +38,9 @@ def display_menu(is_logged_in):
             {"option": "8", "text": " Mine transactions", "action": lambda: blockchain.mine_transactions(user.current_user)},
             {"option": "9", "text": " Notifications", "action": lambda: notification.view_notifications(user.current_user)},
             {"option": "10", "text": "Check validation blockchain", "action": lambda: validation_chain(user.current_user)},
-            {"option": "11", "text": "Logout", "action": lambda: user.logout()},
-            {"option": "12", "text": "Exit application", "action": lambda: "exit"}
+            {"option": "11", "text": "View transaction history", "action": lambda: user.view_transaction_history()},
+            {"option": "12", "text": "Logout", "action": lambda: user.logout()},
+            {"option": "13", "text": "Exit application", "action": lambda: "exit"}
         ]
     else:
         return [

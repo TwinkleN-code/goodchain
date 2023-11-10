@@ -9,7 +9,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 5
+DIFFICULTY = 4
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
         self.id = block_id
@@ -20,7 +20,7 @@ class Block:
         self.hash = None
         self.validators = []
         self.status = BLOCK_STATUS[0]
-        # self.created_by = username
+        self.difficulty = DIFFICULTY
 
     def compute_hash(self):
         digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
@@ -62,7 +62,7 @@ class Block:
             return False
 
         #check if block's hash meets the difficulty requirement
-        if not self.hash[:DIFFICULTY] == '0' * DIFFICULTY:
+        if not self.hash[:self.difficulty] == '0' * self.difficulty:
             return False
         
         # if previous block is genesis
@@ -116,6 +116,7 @@ class Blockchain:
         
     def blockchain_is_valid(self, current_user):
         invalid_blocks = []
+        valid_pending_blocks = []
         # Check for genesis block
         if not self.chain:
             return True
@@ -124,8 +125,6 @@ class Blockchain:
 
         # Start with the last block and validate chain integrity
         for i, current_block in enumerate(self.chain):
-            current_hash = current_block.compute_hash()
-
             # Skip genesis block but check its previous hash
             if i == 0:
                 if current_block.previous_hash != "0":
@@ -133,6 +132,26 @@ class Blockchain:
                     return False
                 previous_hash = current_block.hash
                 continue
+
+            skip_block = False
+            # check if block is already validated by user
+            if current_block.validators:
+                for user, type in current_block.validators:
+                    if current_user == user:
+                        skip_block = True
+                        break
+            
+            if skip_block:
+                continue
+
+            # check if block is created by miner
+            if i != 0:
+                miner_username = get_block_miner("blockchain.dat", i)
+                if miner_username == current_user:
+                    continue
+
+
+            current_hash = current_block.compute_hash()    
 
             # 1. Check the previous_hash of the current block
             if current_block.previous_hash != previous_hash:
@@ -165,12 +184,20 @@ class Blockchain:
                     current_block.validators.append((current_user, "invalid"))
                     if current_block.id not in invalid_blocks:  
                         invalid_blocks.append(current_block.id)
+
+            # if block status is on pending add a valid flag
+            if current_block.status == BLOCK_STATUS[0] and current_block.id not in invalid_blocks:
+                current_block.validators.append(current_user, "valid")
+                valid_pending_blocks.append(current_block.id)
                 
             previous_hash = current_hash
 
         #update in file
-        if invalid_blocks:
+        if invalid_blocks or valid_pending_blocks:
             save_to_file(self.chain, "blockchain.dat")
+
+            #check if 3 flags
+            check_validators(self.chain, current_user)
             
         return invalid_blocks
 
@@ -375,7 +402,7 @@ class Blockchain:
         transactions = get_all_transactions_in_block(chain, block_index)
         block_miner = get_block_miner("blockchain.dat", block_index)
         validators = chain[block_index].validators
-        transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nStatus: {chain[block_index].status}\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nPrevious_hash: {chain[block_index].previous_hash}"
+        transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nStatus: {chain[block_index].status}\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nDifficulty: {chain[block_index].difficulty}\nPrevious_hash: {chain[block_index].previous_hash}"
         if len(validators) > 0:
             for val in validators:
                 transactions_to_display += f"\n🏳️  Flagged {val[1]} by {val[0]}"
@@ -389,3 +416,55 @@ class Blockchain:
                     
 
         display_menu_and_get_choice(options, username, transactions_to_display)
+
+
+def check_validators(chain, miner_username):
+    invalid_flags = 0
+    valid_flags = 0
+    db = Database()
+
+    for validator in chain[-1].validators:
+        if validator[1] == "valid":
+            valid_flags += 1
+        elif validator[1] == "invalid":
+            invalid_flags += 1
+
+    if valid_flags >= 3:
+        for tx in chain[-1].transactions:
+            if tx.input != None:            
+                #notify succesful transactions 
+                get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+                receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                notification.add_notification(get_sender_username[0][0], f"successful transaction: {tx.input[1]} coin(s) to {receiver_username[0][0]}")
+                notification.add_notification(receiver_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}")
+            else:
+                #reward notification
+                get_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                notification.add_notification(get_username[0][0], f"reward of {tx.output[1]} coin(s) added to you balance")
+        
+        #change status of block 
+        chain[-1].status = BLOCK_STATUS[1]
+
+        #send notification
+        notification.add_notification_to_all_users(f"block with id {chain[-1].id} verified and added to the blockchain", miner_username)
+        notification.add_notification_to_all_users(f"new size of blockchain: {len(chain)}")
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} status changed from {BLOCK_STATUS[0]} to {BLOCK_STATUS[1]}")
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is verified and added to the blockchain")
+
+    elif invalid_flags >= 3:
+        chain[-1].status = BLOCK_STATUS[2]
+        list_transactions = chain[-1].transactions
+        # put transactions back in pool
+        for tx in list_transactions[:-1]: #skips the reward transaction of miner
+            transaction_pool.add_transaction(tx)
+
+        # remove block from blockchain
+        remove_from_file("blockchain.dat", len(chain)-1)
+
+        #notify user's rejected block
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
+        return
+
+    #update in file
+    save_to_file(chain, "blockchain.dat")
+    return
