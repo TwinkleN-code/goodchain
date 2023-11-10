@@ -2,7 +2,7 @@ from database import Database
 from notifications import notification
 from blockchain import Blockchain
 from transaction import REWARD, cancel_invalid_transactions, transaction_pool
-from utils import get_block_miner, print_header, remove_from_file, BLOCK_STATUS
+from utils import display_menu_and_get_choice, get_block_miner, print_header, remove_from_file, BLOCK_STATUS
 from storage import load_from_file, save_to_file
 
 
@@ -67,10 +67,10 @@ def check_validators(chain, miner_username):
         chain[-1].status = BLOCK_STATUS[1]
 
         #send notification
-        notification.add_notification_to_all_users(f"block with id {chain[-1].id} verified", miner_username)
+        notification.add_notification_to_all_users(f"block with id {chain[-1].id} verified and added to the blockchain", miner_username)
         notification.add_notification_to_all_users(f"new size of blockchain: {len(chain)}")
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} status changed from {BLOCK_STATUS[0]} to {BLOCK_STATUS[1]}")
-        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is verified")
+        notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is verified and added to the blockchain")
 
     elif invalid_flags >= 3:
         chain[-1].status = BLOCK_STATUS[2]
@@ -100,8 +100,13 @@ def automatic_tasks(username):
 
 
 def validation_chain(current_user):
+    print_header(current_user)
     block_chain = Blockchain()
     block_chain.chain = load_from_file("blockchain.dat")
+    # if file is empty return
+    if not block_chain.chain:
+        print("Validation is not possible as the blockchain is currently empty.")
+        return
     result = block_chain.blockchain_is_valid(current_user)
     if len(result) == 0:
         print_header(current_user)
@@ -110,3 +115,8 @@ def validation_chain(current_user):
         result_str = ', '.join(map(str, result))
         print_header(current_user)
         print(f"Blocks with id: {result_str} are invalid")
+
+    options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
+    choice_result = display_menu_and_get_choice(options)
+    if choice_result == "back":
+        return

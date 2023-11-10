@@ -28,16 +28,16 @@ def settings_menu():
 def display_menu(is_logged_in):
     if is_logged_in:
         return [
-            {"option": "1", "text": "View keys", "action": lambda: view_user_keys(user.current_user)}, 
-            {"option": "2", "text": "Account Settings", "action": lambda: settings_menu()},          
-            {"option": "3", "text": "View transaction pool", "action": lambda: transaction.view_transactions(user.current_user)},
-            {"option": "4", "text": "View blockchain", "action": lambda: blockchain.view_blockchain(user.current_user)},
-            {"option": "5", "text": "Send coins", "action": lambda: user.transfer_coins()},
-            {"option": "6", "text": "Cancel a transaction", "action": lambda: user.remove_transaction()},
-            {"option": "7", "text": "Modify a transaction", "action": lambda: user.edit_transaction()},
-            {"option": "8", "text": "Mine transactions", "action": lambda: blockchain.mine_transactions(user.current_user)},
-            {"option": "9", "text": "View notifications", "action": lambda: notification.view_notifications(user.current_user)},
-            {"option": "10", "text": "View blockchain validation", "action": lambda: validation_chain(user.current_user)},
+            {"option": "1", "text": " View keys", "action": lambda: view_user_keys(user.current_user)}, 
+            {"option": "2", "text": " Account Settings", "action": lambda: settings_menu()},          
+            {"option": "3", "text": " View transaction pool", "action": lambda: transaction.view_transactions(user.current_user)},
+            {"option": "4", "text": " View blockchain", "action": lambda: blockchain.view_blockchain(user.current_user)},
+            {"option": "5", "text": " Send coins", "action": lambda: user.transfer_coins()},
+            {"option": "6", "text": " Cancel a transaction", "action": lambda: user.remove_transaction()},
+            {"option": "7", "text": " Modify a transaction", "action": lambda: user.edit_transaction()},
+            {"option": "8", "text": " Mine transactions", "action": lambda: blockchain.mine_transactions(user.current_user)},
+            {"option": "9", "text": " Notifications", "action": lambda: notification.view_notifications(user.current_user)},
+            {"option": "10", "text": "Check validation blockchain", "action": lambda: validation_chain(user.current_user)},
             {"option": "11", "text": "Logout", "action": lambda: user.logout()},
             {"option": "12", "text": "Exit application", "action": lambda: "exit"}
         ]
@@ -69,6 +69,7 @@ if not os.path.isfile('blockchain.dat'):
     with open("blockchain.dat", 'wb') as file:
         pickle.dump(data, file)
 if not os.path.isfile('transactions.dat'):
-    with open("transactions.dat", "w"):
-        pass   
+    data = []
+    with open("transactions.dat", "wb") as file:
+        pickle.dump(data, file) 
 main_menu()

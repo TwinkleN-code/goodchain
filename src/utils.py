@@ -244,9 +244,3 @@ def calculate_pending_balance(public_key, transactions):
                 balance += tx.fee
 
     return balance
-
-def last_block_status():
-    chain = load_from_file("blockchain.dat")
-    if chain:
-        return chain[-1].status
-    return None

@@ -254,9 +254,9 @@ class User:
 
         if (amount_to_transfer + transaction_fee) > (available_balance - pending_balance):
             print_header(self.current_user)
-            print("Insufficient balance")
+            print("Insufficient balance available")
             return
-
+        
         # check if receiver exists
         if not self.validate_username(receiver_username):
             print_header(self.current_user)
@@ -296,12 +296,11 @@ class User:
         print('Transaction successful')
 
     def remove_transaction(self):
-        print_header(self.current_user)
         # show all user transactions from the pool
         transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
             print_header(self.current_user)
-            print("You have no transactions")
+            print("You have no pending transactions")
             return
         
         print("Pending transactions: ")
@@ -344,7 +343,7 @@ class User:
         transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
             print_header(self.current_user)
-            print("You have no transactions")
+            print("You have no pending transactions")
             return
         print_header(self.current_user)
         print("Pending transactions")
@@ -468,7 +467,8 @@ class User:
                 available_balance = 0
                 pending_balance = 0
                 temp_fee = transactions[tx_choice][3]
-                del pool_transactions[index] 
+                temp_amount = transactions[tx_choice][1]
+                del pool_transactions[index]  #exclude selected transaction
                 for block in chain:
                     if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
                         available_balance += calculate_balance(public_key, block.transactions, True)
@@ -489,10 +489,6 @@ class User:
                 tx.add_output(public_key_receiver, new_amount)
 
             tx.sign(private_key)
-            if not tx.is_valid():
-                print_header(self.current_user)
-                print("Invalid transaction")
-                return
             
             #confirm
             options = [{"option": "1", "text": "Save changes", "action": lambda: "confirm"},
@@ -501,8 +497,16 @@ class User:
             if choice_result == "back":
                 return
             
-            #remove and add new transaction
+            # remove old transaction
             remove = remove_from_file("transactions.dat", index)
+
+            # check validation after old one is removed
+            if not tx.is_valid(): 
+                print_header(self.current_user)
+                print("Invalid transaction")
+                return
+            
+            # add transaction
             if remove:
                 transaction_pool.add_transaction(tx)
                 print_header(self.current_user)
