@@ -4,7 +4,7 @@ import getpass
 from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
 from block_validation import automatic_tasks
-from utils import BLOCK_STATUS, calculate_pending_balance, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
+from utils import BLOCK_STATUS, calculate_pending_balance, display_menu_and_get_choice, get_all_transactions, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file
@@ -516,3 +516,16 @@ class User:
                 print_header(self.current_user)
                 print('Could not modify transaction')
                 return  
+            
+    def view_transaction_history(self):
+        transactions = get_all_transactions("transactions.dat")
+        chain = load_from_file("blockchain.dat")
+        options = [
+        {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
+        ]
+
+        transactions_to_display = "All Transactions: \n\n"
+
+        if transactions:
+            for tx in transactions:
+                pass
