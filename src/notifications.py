@@ -9,10 +9,10 @@ class Notification:
         self.database_key = read_key()
 
     def view_notifications(self, username):
+        print_header(username)
         id = self.get_user_id(username)
         notifications = self.db.fetch('SELECT notification FROM notifications WHERE ID=?', (id, ))
         if not notifications:
-            print_header()
             print("Your notifications are empty")
             return
         print("\nYour notifications:\n")

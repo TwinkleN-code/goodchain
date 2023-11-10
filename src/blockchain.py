@@ -9,7 +9,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 4
+DIFFICULTY = 5
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
         self.id = block_id
@@ -175,31 +175,31 @@ class Blockchain:
         return invalid_blocks
 
     def mine_transactions(self, username):
+        print_header(username)
         # add 3 minutes time interval
         current_timestamp = time.time()
         time_since_last_mine = current_timestamp - self.last_mined_timestamp
         invalid_tx = []
         if time_since_last_mine < 180:  # 180 seconds = 3 minutes
-            print_header(username)
             print(f"Too soon to mine again. Please wait {180 - time_since_last_mine:.0f} more seconds.")
             return
         
-        # new block can only be mined if previous block is valid
-        get_status = last_block_status()
-        if get_status == BLOCK_STATUS[0]:
-            print("Previous block needs to be validated first.")
-            return
+        # new block can only be mined if every block is valid
+        load_chain = load_from_file("blockchain.dat")
+        if load_chain:
+            for block in reversed(load_chain):
+                if block.status != BLOCK_STATUS[1] and block.id != 0 and block.previous_hash != "0":
+                    print(f"Mining is not possible until the validation of block {block.id} is completed.")
+                    return
 
         transactions = load_from_file("transactions.dat")
         transactions_to_mine = []
         indices_to_remove = []
         # Need to have 5 transactions to mine (4 transactions + mining reward)
         if len(transactions) < 4:
-            print_header(username)
             print("Not enough transactions to mine.")
             return
         elif len(transactions) >= 10:
-            print_header(username)
             transactions_list = get_all_transactions("transactions.dat")
             print("All Transactions: \n")
             for tx in transactions_list:
@@ -238,11 +238,9 @@ class Blockchain:
                                 indices_to_remove.append(index)
                                 invalid_tx.append(transactions[index])
                     else:
-                        print_header(username)
                         print("Invalid input. Please enter numbers within the range.")
                         return
                 except ValueError:
-                    print_header(username)
                     print("Invalid input. Please enter numbers only.")
                     return
             # Filter out the user-picked transactions
@@ -294,6 +292,7 @@ class Blockchain:
         elif transactions_to_mine == [] and indices_to_remove != []: 
             # updated invalid transactions
             print("There are no valid transactions to mine")
+            return
         else:
             # Add a reward transaction for the miner
             decrypted_private_key = fetch_decrypted_private_key(username)
@@ -306,7 +305,6 @@ class Blockchain:
             transactions_to_mine.append(reward_transaction)
             
             # Create a new block with the transactions and mine it
-            load_chain = load_from_file("blockchain.dat")
             if len(load_chain) > 0:
                 new_block = Block(transactions_to_mine, load_chain[-1].hash, len(load_chain))
             else:  
@@ -319,7 +317,7 @@ class Blockchain:
 
             #add notification to user
             notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
-            notification.add_notification(username, f"pending reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
+            notification.add_notification(username, f"pending mining reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
         #removing transactions from pool
         for index in sorted(indices_to_remove, reverse=True):

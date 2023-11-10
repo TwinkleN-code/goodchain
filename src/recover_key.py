@@ -38,7 +38,7 @@ def generate_random_mnemonic():
 def recover_private_key():
     print_header()
     db = Database()
-    username = input('Enter username: ').lower()
+    username = input('Enter username: ').lower().strip()
     user_key = input("Enter recovery key: ")
 
     # if username exists
