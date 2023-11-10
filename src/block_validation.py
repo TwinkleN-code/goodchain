@@ -109,9 +109,11 @@ def validation_chain(current_user):
         return
     result = block_chain.blockchain_is_valid(current_user)
     if len(result) == 0:
+        print_header(current_user)
         print("Blockchain has valid blocks")
     else:
         result_str = ', '.join(map(str, result))
+        print_header(current_user)
         print(f"Blocks with id: {result_str} are invalid")
 
     options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
