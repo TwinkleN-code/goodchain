@@ -1,3 +1,4 @@
+import datetime
 import sqlite3
 import re
 import getpass
@@ -518,14 +519,79 @@ class User:
                 return  
             
     def view_transaction_history(self):
-        transactions = get_all_transactions("transactions.dat")
+        db = Database()
+        transaction_pool = load_from_file("transactions.dat")
         chain = load_from_file("blockchain.dat")
+        public_key = get_current_user_public_key(self.current_user)
         options = [
         {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
         ]
 
-        transactions_to_display = "All Transactions: \n\n"
+        pending_transactions_to_display = "Pending Transactions: \n"
+        count_pending = 1
+        count_val = 1
 
-        if transactions:
-            for tx in transactions:
-                pass
+        for tx in transaction_pool:
+            if tx.type == 0:
+                if tx.input[0] == public_key:
+                    get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                    pending_transactions_to_display += f"{count_pending}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Sending: {tx.input[1]} coin(s) to {get_receiver_username[0][0]} including transaction fee of {tx.fee} coin(s)\n"
+                    count_pending += 1
+                elif tx.output[0] == public_key:
+                    get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+                    pending_transactions_to_display += f"{count_pending}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Receiving: {tx.output[1]} coin(s) from {get_sender_username[0][0]} including transaction fee of {tx.fee} coin(s)\n"
+                    count_pending += 1
+            else:
+                if tx.output[0] == public_key:
+                    pending_transactions_to_display += f"{count_pending}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Receiving reward: {tx.output[1]} coin(s)\n"
+                    count_pending += 1
+
+        validated_transactions_to_display = "\nVerified Transactions: \n"
+        for block in chain:
+            # transactions from pending blocks
+            if block.status == BLOCK_STATUS[0]:
+                for tx in block.transactions:
+                    if tx.type == 0:
+                        if tx.input[0] == public_key:
+                            get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                            pending_transactions_to_display += f"{count_pending}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Sending: {tx.input[1]} coin(s) to {get_receiver_username[0][0]} including transaction fee of {tx.fee} coin(s)\n"
+                            count_pending += 1
+                        elif tx.output[0] == public_key:
+                            get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+                            pending_transactions_to_display += f"{count_pending}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Receiving: {tx.output[1]} coin(s) from {get_sender_username[0][0]} including transaction fee of {tx.fee} coin(s)\n"
+                            count_pending += 1
+                    else:
+                        if tx.output[0] == public_key:
+                            pending_transactions_to_display += f"{count_pending}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Receiving reward: {tx.output[1]} coin(s)\n"
+                            count_pending += 1
+            # transactions from valid blocks
+            elif block.status == BLOCK_STATUS[1]:
+                for tx in block.transactions:
+                    if tx.type == 0:
+                        if tx.input[0] == public_key:
+                            get_receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
+                            validated_transactions_to_display += f"{count_val}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Sending: {tx.input[1]} coin(s) to {get_receiver_username[0][0]} including transaction fee of {tx.fee} coin(s)\n"
+                            count_val += 1
+                        elif tx.output[0] == public_key:
+                            get_sender_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.input[0], ))
+                            validated_transactions_to_display += f"{count_val}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Receiving: {tx.output[1]} coin(s) from {get_sender_username[0][0]} including transaction fee of {tx.fee} coin(s)\n"
+                            count_val += 1
+                    else:
+                        if tx.output[0] == public_key:
+                            validated_transactions_to_display += f"{count_val}. {datetime.datetime.fromtimestamp(tx.timestamp).strftime('%d-%m-%Y %H:%M:%S')} Receiving reward: {tx.output[1]} coin(s)\n"
+                            count_val += 1
+
+        if count_pending == 1:
+            print("You have no pending transactions")
+        else:
+            print(pending_transactions_to_display)
+
+        if count_val == 1:
+            print("You have no verified transactions")
+        else:
+            print(validated_transactions_to_display)
+
+        choice_result = display_menu_and_get_choice(options)
+        if choice_result == "back":
+            return
+           
