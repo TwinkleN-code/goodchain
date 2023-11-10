@@ -10,6 +10,7 @@ import os
 import datetime
 
 DIFFICULTY = 5
+
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
         self.id = block_id

@@ -119,4 +119,5 @@ def validation_chain(current_user):
     options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
     choice_result = display_menu_and_get_choice(options)
     if choice_result == "back":
+        print_header(current_user)
         return
