@@ -4,7 +4,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
-from storage import load_from_file, save_to_file
+from storage import load_from_file, save_to_file, blockchain_file_path, transactions_file_path
 
 BLOCK_STATUS = ["pending", "verified", "rejected", "genesis"]
 
@@ -188,7 +188,7 @@ def remove_from_file(filename, index):
     return False
         
 def view_balance(username):
-        pool_transactions = load_from_file("transactions.dat")
+        pool_transactions = load_from_file()
         public_key = get_current_user_public_key(username)
 
         #pending balance from pool
@@ -197,8 +197,8 @@ def view_balance(username):
             pending_balance += calculate_pending_balance(public_key, pool_transactions)
 
         #balance from validated blocks
-        chain = load_from_file("blockchain.dat")
-        transactions = load_from_file("transactions.dat")
+        chain = load_from_file(blockchain_file_path)
+        transactions = load_from_file(transactions_file_path)
         available_balance = 0
         for transaction in transactions:
             if transaction.type == 1 and transaction.output[0] == public_key:

@@ -8,7 +8,7 @@ from block_validation import automatic_tasks
 from utils import BLOCK_STATUS, calculate_pending_balance, display_menu_and_get_choice, get_all_transactions, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
-from storage import load_from_file
+from storage import load_from_file, blockchain_file_path, transactions_file_path
 import hashlib
 
 PEPPER = b"MySecretPepperValue"
@@ -237,7 +237,7 @@ class User:
             return
 
         # check if enough balance [amount_to_transfer + transfer_fee <= available balance - (pending balance from pool + pending balance from blocks)]
-        chain = load_from_file("blockchain.dat")
+        chain = load_from_file(blockchain_file_path)
         public_key = get_current_user_public_key(self.current_user)
         available_balance = 0
         pending_balance = 0
@@ -249,7 +249,7 @@ class User:
             elif block.status == BLOCK_STATUS[0]: 
                 pending_balance += calculate_pending_balance(public_key, block.transactions) 
 
-        pool_transactions = load_from_file("transactions.dat")
+        pool_transactions = load_from_file(transactions_file_path)
         if pool_transactions:
             pending_balance += calculate_pending_balance(public_key,pool_transactions)
 
@@ -298,7 +298,7 @@ class User:
 
     def remove_transaction(self):
         # show all user transactions from the pool
-        transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
+        transactions = get_user_transactions(transactions_file_path, self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
             print_header(self.current_user)
             print("You have no pending transactions")
@@ -330,8 +330,8 @@ class User:
                 return
             
             # delete from pool
-            index = find_index_from_file("transactions.dat", transactions[choice-1][1], get_current_user_public_key(self.current_user), get_current_user_public_key(transactions[choice-1][2]), transactions[choice-1][3])
-            remove = remove_from_file("transactions.dat", index)
+            index = find_index_from_file(transactions_file_path, transactions[choice-1][1], get_current_user_public_key(self.current_user), get_current_user_public_key(transactions[choice-1][2]), transactions[choice-1][3])
+            remove = remove_from_file(transactions_file_path, index)
             if remove:
                 print_header(self.current_user)
                 print("Transaction canceled")
@@ -341,7 +341,7 @@ class User:
             return
 
     def edit_transaction(self):
-        transactions = get_user_transactions("transactions.dat", self.current_user) # [number, input amount, username sender, fee]
+        transactions = get_user_transactions(transactions_file_path, self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
             print_header(self.current_user)
             print("You have no pending transactions")
@@ -385,7 +385,7 @@ class User:
             private_key = fetch_decrypted_private_key(self.current_user)
             public_key = get_current_user_public_key(self.current_user)
             public_key_receiver = get_current_user_public_key(transactions[tx_choice][2])
-            index = find_index_from_file("transactions.dat", transactions[tx_choice][1],  public_key, public_key_receiver, transactions[tx_choice][3])
+            index = find_index_from_file(transactions_file_path, transactions[tx_choice][1],  public_key, public_key_receiver, transactions[tx_choice][3])
             if edit_choice == 2:
                 new_username = input("Enter new username: ").replace(" ", "").lower()
                 if not self.validate_username(new_username) or not self.username_exists(new_username):
@@ -419,8 +419,8 @@ class User:
                     return
 
                 # check if enough balance
-                chain = load_from_file("blockchain.dat")
-                pool_transactions = load_from_file("transactions.dat")
+                chain = load_from_file(blockchain_file_path)
+                pool_transactions = load_from_file(transactions_file_path)
                 available_balance = 0
                 pending_balance = 0
                 temp_amount = transactions[tx_choice][1]
@@ -463,8 +463,8 @@ class User:
                     return
 
                 # check if enough balance
-                chain = load_from_file("blockchain.dat")
-                pool_transactions = load_from_file("transactions.dat")
+                chain = load_from_file(blockchain_file_path)
+                pool_transactions = load_from_file(transactions_file_path)
                 available_balance = 0
                 pending_balance = 0
                 temp_fee = transactions[tx_choice][3]
@@ -499,7 +499,7 @@ class User:
                 return
             
             # remove old transaction
-            remove = remove_from_file("transactions.dat", index)
+            remove = remove_from_file(transactions_file_path, index)
 
             # check validation after old one is removed
             if not tx.is_valid(): 
@@ -520,8 +520,8 @@ class User:
             
     def view_transaction_history(self):
         db = Database()
-        transaction_pool = load_from_file("transactions.dat")
-        chain = load_from_file("blockchain.dat")
+        transaction_pool = load_from_file(transactions_file_path)
+        chain = load_from_file(blockchain_file_path)
         public_key = get_current_user_public_key(self.current_user)
         options = [
         {"option": "1", "text": "Back to main menu", "action": lambda: "back"}

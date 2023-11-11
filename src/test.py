@@ -88,13 +88,7 @@ def make_invalid_transaction(sender, receiver):
 
 db = Database()
 db.setup()
-if not os.path.isfile('blockchain.dat'):
-    data = []
-    with open("blockchain.dat", 'wb') as file:
-        pickle.dump(data, file)
-if not os.path.isfile('transactions.dat'):
-    with open("transactions.dat", "w"):
-        pass
+
 
 #make 7 accounts 
 # automatic_accounts("admin", "Admin123!")

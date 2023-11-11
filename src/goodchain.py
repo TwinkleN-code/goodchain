@@ -1,9 +1,8 @@
-import os
-import pickle
 from auth import User
 from database import Database
 from notifications import notification
 from block_validation import validation_chain
+from storage import setup_data_files
 from transaction import Transaction
 from keys import *
 from recover_key import recover_private_key
@@ -59,18 +58,7 @@ def main_menu():
         if choice_result == "exit":
             break         
 
+setup_data_files()
+set_key_file()
 db.setup()
-
-# create key and files if not exists
-if not os.path.isfile('key.txt'):
-    key = generate_key()
-    save_key(key)
-if not os.path.isfile('blockchain.dat'):
-    data = []
-    with open("blockchain.dat", 'wb') as file:
-        pickle.dump(data, file)
-if not os.path.isfile('transactions.dat'):
-    data = []
-    with open("transactions.dat", "wb") as file:
-        pickle.dump(data, file) 
 main_menu()

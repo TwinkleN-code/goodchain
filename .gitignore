@@ -167,3 +167,4 @@ transactions.dat
 key.txt
 blockchain.dat
 last_mined_timestamp.dat
+data/
