@@ -1,3 +1,4 @@
+import threading
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -9,7 +10,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 3
+DIFFICULTY = 4
 
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
@@ -28,28 +29,62 @@ class Block:
         digest.update(bytes(str(self.timestamp) + str(self.transactions) + str(self.previous_hash) + str(self.nonce), 'utf8'))
         return digest.finalize().hex()
 
+    # def mine(self, difficulty, username):
+    #     print_header(username)
+    #     print(f"Mining...")
+    #     pattern = '0' * difficulty
+    #     start_time = time.time()
+    #     start_looping = time.time()
+    #     while True:
+    #         self.hash = self.compute_hash()
+    #         end_time = time.time()
+    #         elapsed_time = end_time - start_looping
+            
+    #         #     difficulty += 1  # Increase difficulty to speed up mining
+    #         # elif elapsed_time > 15:
+    #         #     difficulty -= 1  # Decrease difficulty to slow down mining
+    #         # if difficulty < 1:
+    #         #     difficulty = 4  # Ensure difficulty is at least 1
+    #         if self.hash[:difficulty] == pattern:
+    #             break
+    #         if elapsed_time > 5:
+    #             difficulty += 1
+    #             start_looping = time.time() 
+    #         self.nonce += 1
+    #     end_time = time.time()
+    #     print_header(username)
+    #     print(f"Block mined in {end_time - start_time:.0f} seconds.")
+
     def mine(self, difficulty, username):
         print_header(username)
         print(f"Mining...")
         pattern = '0' * difficulty
+        elapsed_time = 0
         start_time = time.time()
-        while True:
+
+        while elapsed_time < 10:
             self.hash = self.compute_hash()
             end_time = time.time()
             elapsed_time = end_time - start_time
-
-            # if elapsed_time < 10:
-            #     difficulty += 1  # Increase difficulty to speed up mining
-            # elif elapsed_time > 15:
-            #     difficulty -= 1  # Decrease difficulty to slow down mining
-            # if difficulty < 1:
-            #     difficulty = 4  # Ensure difficulty is at least 1
             if self.hash[:difficulty] == pattern:
                 break
             self.nonce += 1
+
+        if elapsed_time < 10:
+            difficulty += 1
+            self.nonce = 0
+            while elapsed_time < 20:
+                self.hash = self.compute_hash()
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                self.nonce += 1
+                if self.hash[:difficulty] == pattern:
+                    break
+
         end_time = time.time()
         print_header(username)
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
+        return difficulty
 
     def is_valid(self, previousBlock, username):
         #if block is genesis
@@ -118,11 +153,13 @@ class Blockchain:
     def _load_last_mined_timestamp(self):
         # Check if the file exists
         if os.path.exists(last_mined_timestamp_path):
-            # Load the last mined timestamp from the file
-            return load_from_file(last_mined_timestamp_path)[0]
-        else:
-            # If the file does not exist, return a default value of 0
-            return 0
+            time_stamp = load_from_file(last_mined_timestamp_path)
+            if time_stamp:
+                # Load the last mined timestamp from the file
+                return time_stamp[0]
+            else:
+                # If the file does not exist, return a default value of 0
+                return 0
         
     def blockchain_is_valid(self, current_user):
         invalid_blocks = []
@@ -346,7 +383,8 @@ class Blockchain:
                 new_block = Block(transactions_to_mine, load_chain[-1].hash, len(load_chain))
             else:  
                 new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
-            new_block.mine(self.difficulty, username)
+            result_diff = new_block.mine(self.difficulty, username)
+            new_block.difficulty = result_diff
             self.last_mined_timestamp = time.time()
 
             # Add the new block to the blockchain
@@ -470,6 +508,9 @@ def check_validators(chain, miner_username):
 
         # remove block from blockchain
         remove_from_file(blockchain_file_path, len(chain)-1)
+
+        if chain[-1].id == 1:
+            remove_from_file(blockchain_file_path, 0)
 
         #notify user's rejected block
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")

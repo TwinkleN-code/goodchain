@@ -188,7 +188,7 @@ def remove_from_file(filename, index):
     return False
         
 def view_balance(username):
-        pool_transactions = load_from_file()
+        pool_transactions = load_from_file(transactions_file_path)
         public_key = get_current_user_public_key(username)
 
         #pending balance from pool

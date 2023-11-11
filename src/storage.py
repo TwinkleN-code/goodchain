@@ -25,8 +25,6 @@ def setup_data_files():
     if not os.path.exists(subfolder):
         os.makedirs(subfolder)
 
-    
-
     if not os.path.isfile(blockchain_file_path):
         data = []
         with open(blockchain_file_path, 'wb') as file:
