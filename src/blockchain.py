@@ -41,6 +41,7 @@ class Block:
         end_time = time.time()
         print_header(username)
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
+        return difficulty
 
     def is_valid(self, previousBlock, username):
         #if block is genesis
