@@ -1,9 +1,10 @@
+import os
 import sqlite3
 
 class Database:
 
-    def __init__(self, db_name='users.db'):
-        self.db_name = db_name
+    def __init__(self, db_name='users.db', subfolder='data'):
+        self.db_name = os.path.join(subfolder, db_name)
 
     def _connect(self):
         return sqlite3.connect(self.db_name)
@@ -37,3 +38,4 @@ class Database:
 
     def fetch(self, query, params=None):
         return self._execute(query, params, fetch=True)
+    

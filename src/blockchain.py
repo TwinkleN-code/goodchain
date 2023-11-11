@@ -1,15 +1,16 @@
+import threading
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from notifications import notification
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
 from keys import fetch_decrypted_private_key
-from storage import load_from_file, save_to_file
+from storage import load_from_file, save_to_file, transactions_file_path, blockchain_file_path, last_mined_timestamp_path
 from utils import *
 import os
 import datetime
 
-DIFFICULTY = 5
+DIFFICULTY = 4
 
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
@@ -36,11 +37,42 @@ class Block:
         while True:
             self.hash = self.compute_hash()
             if self.hash[:difficulty] == pattern:
-                break
+                break 
             self.nonce += 1
         end_time = time.time()
         print_header(username)
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
+
+    # def mine(self, difficulty, username):
+    #     print_header(username)
+    #     print(f"Mining...")
+    #     pattern = '0' * difficulty
+    #     elapsed_time = 0
+    #     start_time = time.time()
+
+    #     while elapsed_time < 10:
+    #         self.hash = self.compute_hash()
+    #         end_time = time.time()
+    #         elapsed_time = end_time - start_time
+    #         if self.hash[:difficulty] == pattern:
+    #             break
+    #         self.nonce += 1
+
+    #     if elapsed_time < 10:
+    #         difficulty += 1
+    #         self.nonce = 0
+    #         while elapsed_time < 20:
+    #             self.hash = self.compute_hash()
+    #             end_time = time.time()
+    #             elapsed_time = end_time - start_time
+    #             self.nonce += 1
+    #             if self.hash[:difficulty] == pattern:
+    #                 break
+
+    #     end_time = time.time()
+    #     print_header(username)
+    #     print(f"Block mined in {end_time - start_time:.0f} seconds.")
+    #     return difficulty
 
     def is_valid(self, previousBlock, username):
         #if block is genesis
@@ -98,22 +130,24 @@ class Blockchain:
         self._save_block_to_file(block)
 
     def _save_block_to_file(self, block):
-        blocks = load_from_file("blockchain.dat")
+        blocks = load_from_file(blockchain_file_path)
         if len(blocks) > 0: 
             blocks.append(block)
         else:
             blocks = self.chain
-        save_to_file(blocks, "blockchain.dat")
-        save_to_file(self.last_mined_timestamp, "last_mined_timestamp.dat")
+        save_to_file(blocks, blockchain_file_path)
+        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path)
 
     def _load_last_mined_timestamp(self):
         # Check if the file exists
-        if os.path.exists("last_mined_timestamp.dat"):
-            # Load the last mined timestamp from the file
-            return load_from_file("last_mined_timestamp.dat")[0]
-        else:
-            # If the file does not exist, return a default value of 0
-            return 0
+        if os.path.exists(last_mined_timestamp_path):
+            time_stamp = load_from_file(last_mined_timestamp_path)
+            if time_stamp:
+                # Load the last mined timestamp from the file
+                return time_stamp[0]
+            else:
+                # If the file does not exist, return a default value of 0
+                return 0
         
     def blockchain_is_valid(self, current_user):
         invalid_blocks = []
@@ -147,7 +181,7 @@ class Blockchain:
 
             # check if block is created by miner
             if i != 0:
-                miner_username = get_block_miner("blockchain.dat", i)
+                miner_username = get_block_miner(blockchain_file_path, i)
                 if miner_username == current_user:
                     continue
 
@@ -195,7 +229,7 @@ class Blockchain:
 
         #update in file
         if invalid_blocks or valid_pending_blocks:
-            save_to_file(self.chain, "blockchain.dat")
+            save_to_file(self.chain, blockchain_file_path)
 
             #check if 3 flags
             check_validators(self.chain, current_user)
@@ -213,14 +247,14 @@ class Blockchain:
             return
         
         # new block can only be mined if every block is valid
-        load_chain = load_from_file("blockchain.dat")
+        load_chain = load_from_file(blockchain_file_path)
         if load_chain:
             for block in reversed(load_chain):
                 if block.status != BLOCK_STATUS[1] and block.id != 0 and block.previous_hash != "0":
                     print(f"Mining is not possible until the validation of block {block.id} is completed.")
                     return
 
-        transactions = load_from_file("transactions.dat")
+        transactions = load_from_file(transactions_file_path)
         transactions_to_mine = []
         indices_to_remove = []
         # Need to have 5 transactions to mine (4 transactions + mining reward)
@@ -228,7 +262,7 @@ class Blockchain:
             print("Not enough transactions to mine.")
             return
         elif len(transactions) >= 10:
-            transactions_list = get_all_transactions("transactions.dat")
+            transactions_list = get_all_transactions(transactions_file_path)
             print("All Transactions: \n")
             for tx in transactions_list:
                 if len(tx) > 5:
@@ -337,7 +371,8 @@ class Blockchain:
                 new_block = Block(transactions_to_mine, load_chain[-1].hash, len(load_chain))
             else:  
                 new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
-            new_block.mine(self.difficulty, username)
+            result_diff = new_block.mine(self.difficulty, username)
+            new_block.difficulty = result_diff
             self.last_mined_timestamp = time.time()
 
             # Add the new block to the blockchain
@@ -349,7 +384,7 @@ class Blockchain:
 
         #removing transactions from pool
         for index in sorted(indices_to_remove, reverse=True):
-            remove_from_file("transactions.dat", index)
+            remove_from_file(transactions_file_path, index)
         
         #update invalid transactions
         if invalid_tx:
@@ -357,7 +392,7 @@ class Blockchain:
                 transaction_pool.add_transaction(tx)
 
     def view_blockchain(self, username=None):
-        chain = load_from_file("blockchain.dat")
+        chain = load_from_file(blockchain_file_path)
 
         if not chain:
             print_header(username)
@@ -370,7 +405,7 @@ class Blockchain:
                 if block.previous_hash == "0":
                     print(f"Genesis Block created at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
                 else:
-                    block_miner = get_block_miner("blockchain.dat", chain.index(block))
+                    block_miner = get_block_miner(blockchain_file_path, chain.index(block))
                     print(f"{chain.index(block)}. Block mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')} [{block.status}]")
 
         print(f"{len(chain)}. Back to main menu\n")
@@ -401,7 +436,7 @@ class Blockchain:
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)
-        block_miner = get_block_miner("blockchain.dat", block_index)
+        block_miner = get_block_miner(blockchain_file_path, block_index)
         validators = chain[block_index].validators
         transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nStatus: {chain[block_index].status}\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nDifficulty: {chain[block_index].difficulty}\nPrevious_hash: {chain[block_index].previous_hash}"
         if len(validators) > 0:
@@ -460,12 +495,15 @@ def check_validators(chain, miner_username):
             transaction_pool.add_transaction(tx)
 
         # remove block from blockchain
-        remove_from_file("blockchain.dat", len(chain)-1)
+        remove_from_file(blockchain_file_path, len(chain)-1)
+
+        if chain[-1].id == 1:
+            remove_from_file(blockchain_file_path, 0)
 
         #notify user's rejected block
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
         return
 
     #update in file
-    save_to_file(chain, "blockchain.dat")
+    save_to_file(chain, blockchain_file_path)
     return

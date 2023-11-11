@@ -1,10 +1,17 @@
+import os
 import sqlite3
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.asymmetric import ec, padding
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
 from cryptography.fernet import Fernet
 from utils import print_header, display_menu_and_get_choice, load_private_key_from_string
 
+key_file_path = os.path.join("data", 'key.txt')
+
+def set_key_file():
+    if not os.path.isfile(key_file_path):
+        key = generate_key()
+        save_key(key, key_file_path)
 
 def generate_keys():
     private_key = ec.generate_private_key(ec.SECP384R1())
@@ -120,7 +127,7 @@ def fetch_decrypted_private_key(username):
 def generate_key() : return Fernet.generate_key()
 
 # save key to a file
-def save_key(key, filename="key.txt"):
+def save_key(key, filename=key_file_path):
     key_string = key.decode("utf-8")
     try:
         with open(filename, "w") as key_file:
@@ -129,7 +136,7 @@ def save_key(key, filename="key.txt"):
         print("Exception: " + str(e))
         return ""
     
-def read_key(filename="key.txt"):
+def read_key(filename=key_file_path):
     try:
         with open(filename, "r") as key_file:
             key_string = key_file.read()

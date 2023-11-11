@@ -1,18 +1,18 @@
 from blockchain import Blockchain, check_validators
 from transaction import cancel_invalid_transactions
 from utils import display_menu_and_get_choice, get_block_miner, print_header, BLOCK_STATUS
-from storage import load_from_file, save_to_file
+from storage import load_from_file, save_to_file, blockchain_file_path
 
 
 def block_valid(current_user):
     # check if there is a pending block
-    chain = load_from_file("blockchain.dat")
+    chain = load_from_file(blockchain_file_path)
 
     if len(chain) <= 1:
         return
     
     previous_block = chain[-2] if len(chain) > 2 else chain[0]
-    miner_username = get_block_miner("blockchain.dat", -1)
+    miner_username = get_block_miner(blockchain_file_path, -1)
     # if there is a pending block
     if chain[-1].status == BLOCK_STATUS[0] and miner_username != current_user:
         # check if already validated by current user
@@ -33,7 +33,7 @@ def block_valid(current_user):
             check_validators(chain, miner_username)
         else:
             #update in file
-            save_to_file(chain, "blockchain.dat")
+            save_to_file(chain, blockchain_file_path)
     return
 
 def automatic_tasks(username):
@@ -48,7 +48,7 @@ def automatic_tasks(username):
 def validation_chain(current_user):
     print_header(current_user)
     block_chain = Blockchain()
-    block_chain.chain = load_from_file("blockchain.dat")
+    block_chain.chain = load_from_file(blockchain_file_path)
     # if file is empty return
     if not block_chain.chain:
         print("Validation is not possible as the blockchain is currently empty.")
