@@ -29,62 +29,50 @@ class Block:
         digest.update(bytes(str(self.timestamp) + str(self.transactions) + str(self.previous_hash) + str(self.nonce), 'utf8'))
         return digest.finalize().hex()
 
-    # def mine(self, difficulty, username):
-    #     print_header(username)
-    #     print(f"Mining...")
-    #     pattern = '0' * difficulty
-    #     start_time = time.time()
-    #     start_looping = time.time()
-    #     while True:
-    #         self.hash = self.compute_hash()
-    #         end_time = time.time()
-    #         elapsed_time = end_time - start_looping
-            
-    #         #     difficulty += 1  # Increase difficulty to speed up mining
-    #         # elif elapsed_time > 15:
-    #         #     difficulty -= 1  # Decrease difficulty to slow down mining
-    #         # if difficulty < 1:
-    #         #     difficulty = 4  # Ensure difficulty is at least 1
-    #         if self.hash[:difficulty] == pattern:
-    #             break
-    #         if elapsed_time > 5:
-    #             difficulty += 1
-    #             start_looping = time.time() 
-    #         self.nonce += 1
-    #     end_time = time.time()
-    #     print_header(username)
-    #     print(f"Block mined in {end_time - start_time:.0f} seconds.")
-
     def mine(self, difficulty, username):
         print_header(username)
         print(f"Mining...")
         pattern = '0' * difficulty
-        elapsed_time = 0
         start_time = time.time()
-
-        while elapsed_time < 10:
+        while True:
             self.hash = self.compute_hash()
-            end_time = time.time()
-            elapsed_time = end_time - start_time
             if self.hash[:difficulty] == pattern:
-                break
+                break 
             self.nonce += 1
-
-        if elapsed_time < 10:
-            difficulty += 1
-            self.nonce = 0
-            while elapsed_time < 20:
-                self.hash = self.compute_hash()
-                end_time = time.time()
-                elapsed_time = end_time - start_time
-                self.nonce += 1
-                if self.hash[:difficulty] == pattern:
-                    break
-
         end_time = time.time()
         print_header(username)
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
-        return difficulty
+
+    # def mine(self, difficulty, username):
+    #     print_header(username)
+    #     print(f"Mining...")
+    #     pattern = '0' * difficulty
+    #     elapsed_time = 0
+    #     start_time = time.time()
+
+    #     while elapsed_time < 10:
+    #         self.hash = self.compute_hash()
+    #         end_time = time.time()
+    #         elapsed_time = end_time - start_time
+    #         if self.hash[:difficulty] == pattern:
+    #             break
+    #         self.nonce += 1
+
+    #     if elapsed_time < 10:
+    #         difficulty += 1
+    #         self.nonce = 0
+    #         while elapsed_time < 20:
+    #             self.hash = self.compute_hash()
+    #             end_time = time.time()
+    #             elapsed_time = end_time - start_time
+    #             self.nonce += 1
+    #             if self.hash[:difficulty] == pattern:
+    #                 break
+
+    #     end_time = time.time()
+    #     print_header(username)
+    #     print(f"Block mined in {end_time - start_time:.0f} seconds.")
+    #     return difficulty
 
     def is_valid(self, previousBlock, username):
         #if block is genesis
