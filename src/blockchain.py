@@ -1,4 +1,3 @@
-import threading
 import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -10,7 +9,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 4
+DIFFICULTY = 5
 
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
@@ -42,37 +41,7 @@ class Block:
         end_time = time.time()
         print_header(username)
         print(f"Block mined in {end_time - start_time:.0f} seconds.")
-
-    # def mine(self, difficulty, username):
-    #     print_header(username)
-    #     print(f"Mining...")
-    #     pattern = '0' * difficulty
-    #     elapsed_time = 0
-    #     start_time = time.time()
-
-    #     while elapsed_time < 10:
-    #         self.hash = self.compute_hash()
-    #         end_time = time.time()
-    #         elapsed_time = end_time - start_time
-    #         if self.hash[:difficulty] == pattern:
-    #             break
-    #         self.nonce += 1
-
-    #     if elapsed_time < 10:
-    #         difficulty += 1
-    #         self.nonce = 0
-    #         while elapsed_time < 20:
-    #             self.hash = self.compute_hash()
-    #             end_time = time.time()
-    #             elapsed_time = end_time - start_time
-    #             self.nonce += 1
-    #             if self.hash[:difficulty] == pattern:
-    #                 break
-
-    #     end_time = time.time()
-    #     print_header(username)
-    #     print(f"Block mined in {end_time - start_time:.0f} seconds.")
-    #     return difficulty
+        return difficulty
 
     def is_valid(self, previousBlock, username):
         #if block is genesis
