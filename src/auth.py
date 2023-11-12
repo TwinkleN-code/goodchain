@@ -10,7 +10,6 @@ from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file, blockchain_file_path, transactions_file_path
 import hashlib
-import time
 
 PEPPER = b"MySecretPepperValue"
 
