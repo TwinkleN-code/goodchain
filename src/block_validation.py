@@ -63,7 +63,7 @@ def validation_chain(current_user):
         print(f"Blocks with id: {result_str} are invalid")
 
     options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
-    choice_result = display_menu_and_get_choice(options)
+    choice_result = display_menu_and_get_choice(options, current_user)
     if choice_result == "back":
         print_header(current_user)
         return

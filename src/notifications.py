@@ -21,8 +21,9 @@ class Notification:
             print(decrypted_notif)
 
         options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
-        choice_result = display_menu_and_get_choice(options)
+        choice_result = display_menu_and_get_choice(options, username)
         if choice_result == "back":
+            print_header(username)
             return
         
     def add_notification(self, username, message):

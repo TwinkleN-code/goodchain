@@ -582,16 +582,19 @@ class User:
                             count_val += 1
 
         if count_pending == 1:
+            print_header(self.current_user)
             print("You have no pending transactions")
         else:
             print(pending_transactions_to_display)
 
         if count_val == 1:
+            print_header(self.current_user)
             print("You have no verified transactions")
         else:
             print(validated_transactions_to_display)
 
-        choice_result = display_menu_and_get_choice(options)
+        choice_result = display_menu_and_get_choice(options, self.current_user)
         if choice_result == "back":
+            print_header(self.current_user)
             return
            

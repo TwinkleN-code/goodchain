@@ -9,7 +9,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 5
+DIFFICULTY = 6
 
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
