@@ -12,7 +12,7 @@ from blockchain import Blockchain
 user = User()
 db = Database()
 transaction = Transaction()
-blockchain = Blockchain()
+blockchain = Blockchain()   
 
 def settings_menu():
     print_header(user.current_user)

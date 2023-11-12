@@ -188,16 +188,16 @@ def remove_from_file(filename, index):
     return False
 
 
-def calculate_balance(user_public_key, transactions, include_fee=False):
+def calculate_balance(public_key, transactions, include_fee=False):
     balance = 0
     for tx in transactions:
         if tx.output:
             output_addr, tx_amount = tx.output
-            if output_addr == user_public_key:
+            if output_addr == public_key:
                 balance += tx_amount
         if tx.input:
             input_addr, tx_amount = tx.input
-            if input_addr == user_public_key:
+            if input_addr == public_key:
                 balance -= tx_amount
                 balance -=tx.fee
         if include_fee:
@@ -212,6 +212,11 @@ def calculate_pending_balance(public_key, transactions):
             if input_addr == public_key:
                 balance += tx_amount
                 balance += tx.fee
+            if tx.input:
+                input_addr, tx_amount = tx.input
+                if input_addr == public_key:
+                    balance -= tx_amount
+                    balance -=tx.fee
 
     return balance
 
@@ -229,11 +234,7 @@ def view_balance(username):
         chain = load_from_file(blockchain_file_path)
         transactions = load_from_file(transactions_file_path)
         available_balance = 0
-        for transaction in transactions:
-            if transaction.type == 0:
-                pending_balance += calculate_pending_balance(public_key, transactions)
-            if transaction.type == 1:
-                pending_balance += calculate_pending_balance(public_key, transactions)
+        pending_balance += calculate_balance(public_key, transactions)
         for block in chain:
             #add transaction fee to the balance
             if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
@@ -244,6 +245,6 @@ def view_balance(username):
                 pending_balance += calculate_pending_balance(public_key, block.transactions)
         
         print(f"Available balance: {available_balance} coins") 
-        if pending_balance > 0: 
+        if pending_balance != 0: 
             print(f"Balance not yet validated: {pending_balance} coins")
         print("\n")
