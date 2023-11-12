@@ -10,6 +10,7 @@ from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file, blockchain_file_path, transactions_file_path
 import hashlib
+import time
 
 PEPPER = b"MySecretPepperValue"
 
@@ -251,9 +252,14 @@ class User:
 
         pool_transactions = load_from_file(transactions_file_path)
         if pool_transactions:
-            pending_balance += calculate_pending_balance(public_key,pool_transactions)
+            pending_balance += calculate_balance(public_key, pool_transactions)
 
-        if (amount_to_transfer + transaction_fee) > (available_balance - pending_balance):
+        if (amount_to_transfer + transaction_fee) > available_balance:
+            print_header(self.current_user)
+            print("Insufficient balance available")
+            return
+
+        if (amount_to_transfer + transaction_fee) > (available_balance + pending_balance):
             print_header(self.current_user)
             print("Insufficient balance available")
             return
@@ -436,9 +442,14 @@ class User:
                         pending_balance += calculate_pending_balance(public_key, block.transactions)
 
                 if pool_transactions:
-                    pending_balance += calculate_pending_balance(public_key,pool_transactions)
+                    pending_balance += calculate_balance(public_key,pool_transactions)
 
-                if (new_fee + temp_amount) > (available_balance - pending_balance):
+                if (new_fee + temp_amount) > available_balance:
+                    print_header(self.current_user)
+                    print("Insufficient balance available")
+                    return
+
+                if (new_fee + temp_amount) > (available_balance + pending_balance):
                     print_header(self.current_user)
                     print("Insufficient balance")
                     return
