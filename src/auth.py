@@ -5,7 +5,7 @@ import getpass
 from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
 from block_validation import automatic_tasks
-from utils import BLOCK_STATUS, calculate_pending_balance, display_menu_and_get_choice, get_all_transactions, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
+from utils import BLOCK_STATUS, calculate_pending_balance, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file, blockchain_file_path, transactions_file_path
@@ -270,7 +270,7 @@ class User:
             return
         
         print_header(self.current_user)
-        choice_result = display_menu_and_get_choice(options, self.current_user, f"You are sending {amount_to_transfer} coins to {receiver_username} with {transaction_fee} transaction fee")
+        choice_result = display_menu_and_get_choice(options, self.current_user, f"You are sending {amount_to_transfer} coins to {receiver_username} with {transaction_fee} transaction fee\n")
         if choice_result == "back":
             return
 
@@ -297,6 +297,7 @@ class User:
         print('Transaction successful')
 
     def remove_transaction(self):
+        print_header(self.current_user)
         # show all user transactions from the pool
         transactions = get_user_transactions(transactions_file_path, self.current_user) # [number, input amount, username sender, fee]
         if transactions == []:
@@ -304,10 +305,10 @@ class User:
             print("You have no pending transactions")
             return
         
-        print("Pending transactions: ")
+        print("Pending transactions:\n")
         for tx in transactions:
             print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[3]} transaction fee")
-        print(f"{len(transactions)+1}. Back to main menu")
+        print(f"{len(transactions)+1}. Back to main menu\n")
         
         choice = input("Enter transaction to cancel: ")
         try:
@@ -322,9 +323,10 @@ class User:
             return
         else:
             #confirm
+            print_header(self.current_user)
             options = [{"option": "1", "text": "Delete transaction", "action": lambda: "confirm"},
                 {"option": "2", "text": "Cancel", "action": lambda: "back"}]
-            choice_result = display_menu_and_get_choice(options)
+            choice_result = display_menu_and_get_choice(options, self.current_user, f"You are deleting transaction: {transactions[choice-1][1]} to {transactions[choice-1][2]} with {transactions[choice-1][3]} transaction fee \n")
             if choice_result == "back":
                 print_header(self.current_user)
                 return
@@ -527,6 +529,7 @@ class User:
         {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
         ]
 
+        transactions_to_display = ""
         pending_transactions_to_display = "Pending Transactions: \n"
         count_pending = 1
         count_val = 1
@@ -583,18 +586,17 @@ class User:
 
         if count_pending == 1:
             print_header(self.current_user)
-            print("You have no pending transactions")
+            transactions_to_display += "You have no pending transactions \n"
         else:
-            print(pending_transactions_to_display)
+            transactions_to_display += pending_transactions_to_display
 
         if count_val == 1:
             print_header(self.current_user)
-            print("You have no verified transactions")
+            transactions_to_display += "You have no verified transactions \n"
         else:
-            print(validated_transactions_to_display)
+            transactions_to_display += validated_transactions_to_display
 
-        choice_result = display_menu_and_get_choice(options, self.current_user)
+        choice_result = display_menu_and_get_choice(options, self.current_user, transactions_to_display)
         if choice_result == "back":
             print_header(self.current_user)
             return
-           

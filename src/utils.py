@@ -186,36 +186,6 @@ def remove_from_file(filename, index):
         save_to_file(all_data, filename)
         return True
     return False
-        
-def view_balance(username):
-        pool_transactions = load_from_file(transactions_file_path)
-        public_key = get_current_user_public_key(username)
-
-        #pending balance from pool
-        pending_balance = 0
-        if pool_transactions:
-            pending_balance += calculate_pending_balance(public_key, pool_transactions)
-
-        #balance from validated blocks
-        chain = load_from_file(blockchain_file_path)
-        transactions = load_from_file(transactions_file_path)
-        available_balance = 0
-        for transaction in transactions:
-            if transaction.type == 1 and transaction.output[0] == public_key:
-                pending_balance += transaction.output[1]
-        for block in chain:
-            #add transaction fee to the balance
-            if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
-                available_balance += calculate_balance(public_key, block.transactions, True)
-            elif block.status == BLOCK_STATUS[1]:
-                available_balance += calculate_balance(public_key, block.transactions)
-            elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
-                pending_balance += calculate_pending_balance(public_key, block.transactions)
-        
-        print(f"Available balance: {available_balance} coins") 
-        if pending_balance > 0: 
-            print(f"Balance not yet validated: {pending_balance} coins")
-        print("\n")
 
 
 def calculate_balance(user_public_key, transactions, include_fee=False):
@@ -244,3 +214,40 @@ def calculate_pending_balance(public_key, transactions):
                 balance += tx.fee
 
     return balance
+
+def view_balance(username):
+        pool_transactions = load_from_file(transactions_file_path)
+        public_key = get_current_user_public_key(username)
+        private_key = None
+
+        #pending balance from pool
+        pending_balance = 0
+        if pool_transactions:
+            pending_balance += calculate_pending_balance(public_key, pool_transactions)
+
+        #balance from validated blocks
+        chain = load_from_file(blockchain_file_path)
+        transactions = load_from_file(transactions_file_path)
+        available_balance = 0
+        for transaction in transactions:
+            if transaction.type == 0 and transaction.output[0] == public_key:
+                pending_balance += transaction.output[1]
+                pending_balance += transaction.fee
+            if transaction.type == 0 and transaction.input[0] == private_key:
+                pending_balance -= transaction.input[1]
+                pending_balance -= transaction.fee
+            if transaction.type == 1 and transaction.output[0] == public_key:
+                pending_balance += transaction.output[1]
+        for block in chain:
+            #add transaction fee to the balance
+            if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
+                available_balance += calculate_balance(public_key, block.transactions, True)
+            elif block.status == BLOCK_STATUS[1]:
+                available_balance += calculate_balance(public_key, block.transactions)
+            elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
+                pending_balance += calculate_pending_balance(public_key, block.transactions)
+        
+        print(f"Available balance: {available_balance} coins") 
+        if pending_balance > 0: 
+            print(f"Balance not yet validated: {pending_balance} coins")
+        print("\n")

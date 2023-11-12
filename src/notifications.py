@@ -12,16 +12,16 @@ class Notification:
         print_header(username)
         id = self.get_user_id(username)
         notifications = self.db.fetch('SELECT notification FROM notifications WHERE ID=?', (id, ))
+        decrypted_notif = "\nYour notifications:\n\n"
         if not notifications:
+            print_header(username)
             print("Your notifications are empty")
             return
-        print("\nYour notifications:\n")
         for notif in reversed(notifications):
-            decrypted_notif = decrypt(notif[0], self.database_key)
-            print(decrypted_notif)
+            decrypted_notif += decrypt(notif[0], self.database_key) + "\n"
 
         options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
-        choice_result = display_menu_and_get_choice(options, username)
+        choice_result = display_menu_and_get_choice(options, username, decrypted_notif)
         if choice_result == "back":
             print_header(username)
             return
