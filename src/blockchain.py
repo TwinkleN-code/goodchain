@@ -326,7 +326,7 @@ class Blockchain:
             return
         else:
             # Add a reward transaction for the miner
-            decrypted_private_key = fetch_private_key(username)
+            decrypted_private_key = fetch_decrypted_private_key(username)
             public_key = get_current_user_public_key(username)
             reward_transaction = Transaction(type = REWARD)
             # Since it's a reward, there are no inputs. 

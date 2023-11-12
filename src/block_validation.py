@@ -49,6 +49,7 @@ def validation_chain(current_user):
     print_header(current_user)
     block_chain = Blockchain()
     block_chain.chain = load_from_file(blockchain_file_path)
+    text = ""
     # if file is empty return
     if not block_chain.chain:
         print("Validation is not possible as the blockchain is currently empty.")
@@ -56,14 +57,14 @@ def validation_chain(current_user):
     result = block_chain.blockchain_is_valid(current_user)
     if len(result) == 0:
         print_header(current_user)
-        print("Blockchain has valid blocks")
+        text += "Blockchain has valid blocks"
     else:
         result_str = ', '.join(map(str, result))
         print_header(current_user)
-        print(f"Blocks with id: {result_str} are invalid")
+        text += f"Blocks with id: {result_str} are invalid"
 
     options = [{"option": "1", "text": "Back to main menu", "action": lambda: "back"}]
-    choice_result = display_menu_and_get_choice(options, current_user)
+    choice_result = display_menu_and_get_choice(options, current_user, text)
     if choice_result == "back":
         print_header(current_user)
         return
