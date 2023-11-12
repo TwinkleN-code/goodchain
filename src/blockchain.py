@@ -324,6 +324,9 @@ class Blockchain:
             # updated invalid transactions
             print("There are no valid transactions to mine")
             return
+        elif len(transactions_to_mine) < 5:
+            print("Not enough transactions to mine.")
+            return
         else:
             # Add a reward transaction for the miner
             decrypted_private_key = fetch_decrypted_private_key(username)
