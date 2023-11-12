@@ -9,7 +9,7 @@ from utils import *
 import os
 import datetime
 
-DIFFICULTY = 6
+DIFFICULTY = 5
 
 class Block:
     def __init__(self, transactions, previous_hash, block_id, nonce=0):
@@ -402,7 +402,7 @@ class Blockchain:
 
     def _view_block(self, chain, block_index, username=None):
         options = [
-        {"option": "1", "text": "Back to blockchain", "action": lambda: self.view_blockchain()},
+        {"option": "1", "text": "Back to blockchain", "action": lambda: self.view_blockchain(username)},
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)

@@ -230,14 +230,10 @@ def view_balance(username):
         transactions = load_from_file(transactions_file_path)
         available_balance = 0
         for transaction in transactions:
-            if transaction.type == 0 and transaction.output[0] == public_key:
-                pending_balance += transaction.output[1]
-                pending_balance += transaction.fee
-            if transaction.type == 0 and transaction.input[0] == private_key:
-                pending_balance -= transaction.input[1]
-                pending_balance -= transaction.fee
-            if transaction.type == 1 and transaction.output[0] == public_key:
-                pending_balance += transaction.output[1]
+            if transaction.type == 0:
+                pending_balance += calculate_pending_balance(public_key, transactions)
+            if transaction.type == 1:
+                pending_balance += calculate_pending_balance(public_key, transactions)
         for block in chain:
             #add transaction fee to the balance
             if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
