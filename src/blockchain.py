@@ -324,7 +324,7 @@ class Blockchain:
             # updated invalid transactions
             print("There are no valid transactions to mine")
             return
-        elif len(transactions_to_mine) < 5:
+        elif len(transactions_to_mine) < 4:
             print("Not enough transactions to mine.")
             return
         else:
