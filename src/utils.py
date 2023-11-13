@@ -260,9 +260,13 @@ def view_balance(username):
                 pending_balance += calculate_balance(public_key, block.transactions)
         
         print(f"Validated balance: {available_balance} coins") 
-        if spendable_balance != 0: 
+        if spendable_balance < 0 and pending_balance >= 0: 
             spendable_balance = available_balance + spendable_balance
             print(f"Spendable balance: {spendable_balance} coins")
-        if pending_balance != 0:
-            print(f"Unvalidated balance: {pending_balance} coins")
+        elif spendable_balance < 0 and pending_balance < 0:
+            spendable_balance = available_balance + spendable_balance + pending_balance
+            print(f"Spendable balance: {spendable_balance} coins")
+        elif spendable_balance >= 0 and pending_balance < 0:
+            spendable_balance = available_balance + pending_balance
+            print(f"Spendable balance: {spendable_balance} coins")
         print("\n")
