@@ -244,7 +244,8 @@ def view_balance(username):
             elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
                 pending_balance += calculate_pending_balance(public_key, block.transactions)
         
-        print(f"Available balance: {available_balance} coins") 
+        print(f"Validated balance: {available_balance} coins") 
         if pending_balance != 0: 
-            print(f"Balance not yet validated: {pending_balance} coins")
+            pending_balance = available_balance + pending_balance
+            print(f"Spendable balance: {pending_balance} coins")
         print("\n")

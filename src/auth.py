@@ -531,6 +531,7 @@ class User:
                 return  
             
     def view_transaction_history(self):
+        print_header(self.current_user)
         db = Database()
         transaction_pool = load_from_file(transactions_file_path)
         chain = load_from_file(blockchain_file_path)
