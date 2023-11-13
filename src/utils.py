@@ -217,7 +217,21 @@ def calculate_pending_balance(public_key, transactions):
                 if input_addr == public_key:
                     balance -= tx_amount
                     balance -=tx.fee
+    return balance
 
+def calculate_spendable_balance(public_key, transactions):
+    balance = 0
+    for tx in transactions:
+        if tx.type == 0:
+            if tx.output:
+                output_addr, tx_amount = tx.output
+                if output_addr == public_key:
+                    balance += tx_amount
+            if tx.input:
+                input_addr, tx_amount = tx.input
+                if input_addr == public_key:
+                    balance -= tx_amount
+                    balance -=tx.fee
     return balance
 
 def view_balance(username):
@@ -227,25 +241,28 @@ def view_balance(username):
 
         #pending balance from pool
         pending_balance = 0
+        spendable_balance = 0
         if pool_transactions:
-            pending_balance += calculate_pending_balance(public_key, pool_transactions)
+            spendable_balance += calculate_spendable_balance(public_key, pool_transactions)
 
         #balance from validated blocks
         chain = load_from_file(blockchain_file_path)
-        transactions = load_from_file(transactions_file_path)
         available_balance = 0
-        pending_balance += calculate_balance(public_key, transactions)
         for block in chain:
             #add transaction fee to the balance
             if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
                 available_balance += calculate_balance(public_key, block.transactions, True)
             elif block.status == BLOCK_STATUS[1]:
                 available_balance += calculate_balance(public_key, block.transactions)
+            elif block.status == BLOCK_STATUS[0] and block.transactions[-1].output[0] == public_key:
+                pending_balance += calculate_balance(public_key, block.transactions, True)
             elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
-                pending_balance += calculate_pending_balance(public_key, block.transactions)
+                pending_balance += calculate_balance(public_key, block.transactions)
         
         print(f"Validated balance: {available_balance} coins") 
-        if pending_balance != 0: 
-            pending_balance = available_balance + pending_balance
-            print(f"Spendable balance: {pending_balance} coins")
+        if spendable_balance != 0: 
+            spendable_balance = available_balance + spendable_balance
+            print(f"Spendable balance: {spendable_balance} coins")
+        if pending_balance != 0:
+            print(f"Unvalidated balance: {pending_balance} coins")
         print("\n")

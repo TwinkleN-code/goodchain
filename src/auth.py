@@ -5,7 +5,7 @@ import getpass
 from keys import encrypt_private_key, generate_keys, read_key, fetch_decrypted_private_key
 from recover_key import generate_random_mnemonic
 from block_validation import automatic_tasks
-from utils import BLOCK_STATUS, calculate_pending_balance, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file ,calculate_balance
+from utils import BLOCK_STATUS, calculate_spendable_balance, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file , calculate_balance, calculate_pending_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file, blockchain_file_path, transactions_file_path
@@ -241,17 +241,20 @@ class User:
         public_key = get_current_user_public_key(self.current_user)
         available_balance = 0
         pending_balance = 0
+        spendable_balance = 0
         for block in chain:
             if block.status == BLOCK_STATUS[1] and block.transactions[-1].output[0] == public_key:
                 available_balance += calculate_balance(public_key, block.transactions, True)
             elif block.status == BLOCK_STATUS[1]:
                 available_balance += calculate_balance(public_key, block.transactions)
-            elif block.status == BLOCK_STATUS[0]: 
-                pending_balance += calculate_pending_balance(public_key, block.transactions) 
+            elif block.status == BLOCK_STATUS[0] and block.transactions[-1].output[0] == public_key:
+                pending_balance += calculate_balance(public_key, block.transactions, True)
+            elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
+                pending_balance += calculate_balance(public_key, block.transactions)
 
         pool_transactions = load_from_file(transactions_file_path)
         if pool_transactions:
-            pending_balance += calculate_balance(public_key, pool_transactions)
+            spendable_balance += calculate_spendable_balance(public_key, pool_transactions)
 
         if (amount_to_transfer + transaction_fee) > available_balance:
             print_header(self.current_user)
@@ -259,6 +262,16 @@ class User:
             return
 
         if (amount_to_transfer + transaction_fee) > (available_balance + pending_balance):
+            print_header(self.current_user)
+            print("Insufficient balance available")
+            return
+        
+        if (amount_to_transfer + transaction_fee) > (available_balance + spendable_balance):
+            print_header(self.current_user)
+            print("Insufficient balance available")
+            return
+        
+        if (amount_to_transfer + transaction_fee) > (available_balance + spendable_balance + pending_balance):
             print_header(self.current_user)
             print("Insufficient balance available")
             return
@@ -430,6 +443,7 @@ class User:
                 pool_transactions = load_from_file(transactions_file_path)
                 available_balance = 0
                 pending_balance = 0
+                spendable_balance = 0
                 temp_amount = transactions[tx_choice][1]
                 del pool_transactions[index] # skip the editting transaction when calculating balance
                 for block in chain:
@@ -437,11 +451,13 @@ class User:
                         available_balance += calculate_balance(public_key, block.transactions, True)
                     elif block.status == BLOCK_STATUS[1]:
                         available_balance += calculate_balance(public_key, block.transactions)
-                    elif block.status == BLOCK_STATUS[0]: 
-                        pending_balance += calculate_pending_balance(public_key, block.transactions)
+                    elif block.status == BLOCK_STATUS[0] and block.transactions[-1].output[0] == public_key:
+                        pending_balance += calculate_balance(public_key, block.transactions, True)
+                    elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
+                        pending_balance += calculate_balance(public_key, block.transactions)
 
                 if pool_transactions:
-                    pending_balance += calculate_balance(public_key,pool_transactions)
+                    spendable_balance += calculate_spendable_balance(public_key,pool_transactions)
 
                 if (new_fee + temp_amount) > available_balance:
                     print_header(self.current_user)
@@ -451,6 +467,16 @@ class User:
                 if (new_fee + temp_amount) > (available_balance + pending_balance):
                     print_header(self.current_user)
                     print("Insufficient balance")
+                    return
+                
+                if (new_fee + temp_amount) > (available_balance + spendable_balance):
+                    print_header(self.current_user)
+                    print("Insufficient balance available")
+                    return
+                
+                if (new_fee + temp_amount) > (available_balance + spendable_balance + pending_balance):
+                    print_header(self.current_user)
+                    print("Insufficient balance available")
                     return
               
                 tx.fee = new_fee
