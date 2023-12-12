@@ -209,6 +209,8 @@ class Blockchain:
         print_header(username)
         # add 3 minutes time interval
         current_timestamp = time.time()
+        if self.last_mined_timestamp == None:
+            self.last_mined_timestamp = 0
         time_since_last_mine = current_timestamp - self.last_mined_timestamp
         invalid_tx = []
         if time_since_last_mine < 180:  # 180 seconds = 3 minutes
