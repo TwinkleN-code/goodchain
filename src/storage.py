@@ -1,10 +1,16 @@
 import os
 import pickle
+import shutil
 
-subfolder = "data"
-blockchain_file_path = os.path.join(subfolder, 'blockchain.dat')
-transactions_file_path = os.path.join(subfolder, 'transactions.dat')
-last_mined_timestamp_path = os.path.join(subfolder, "last_mined_timestamp.dat")
+data_folder = "data"
+client_data_folder = "client_data"
+blockchain_file_path = os.path.join(data_folder, 'blockchain.dat')
+transactions_file_path = os.path.join(data_folder, 'transactions.dat')
+last_mined_timestamp_path = os.path.join(data_folder, "last_mined_timestamp.dat")
+
+blockchain_file_path_client = os.path.join(client_data_folder, 'blockchain.dat')
+transactions_file_path_client = os.path.join(client_data_folder, 'transactions.dat')
+last_mined_timestamp_path_client = os.path.join(client_data_folder, "last_mined_timestamp.dat")
 
 def save_to_file(data, filename):
     with open(filename, "wb") as file:
@@ -22,8 +28,8 @@ def load_from_file(filename):
         return []
     
 def setup_data_files():
-    if not os.path.exists(subfolder):
-        os.makedirs(subfolder)
+    if not os.path.exists(data_folder):
+        os.makedirs(data_folder)
 
     if not os.path.isfile(blockchain_file_path):
         data = []
@@ -38,4 +44,22 @@ def setup_data_files():
     if not os.path.isfile(last_mined_timestamp_path):
         data = []
         with open(last_mined_timestamp_path, "wb") as file:
-            pickle.dump(data, file) 
+            pickle.dump(data, file)
+
+def setup_client_data():
+    # make local copies for the client
+    if not os.path.exists(client_data_folder):
+        os.makedirs(client_data_folder)
+
+    try:
+        shutil.copy(blockchain_file_path, client_data_folder)
+        shutil.copy(transactions_file_path, client_data_folder)
+    except FileNotFoundError:
+        print("File not found")
+    except PermissionError:
+        print("Permission of file denied")
+
+    if not os.path.isfile(last_mined_timestamp_path_client):
+        data = []
+        with open(last_mined_timestamp_path_client, "wb") as file:
+            pickle.dump(data, file)
