@@ -1,8 +1,10 @@
+import threading
 from auth import User
 from database import Database
 from notifications import notification
 from block_validation import validation_chain
-from storage import setup_data_files
+from miner_server import start_miner_server
+from storage import setup_client_data, setup_data_files
 from transaction import Transaction
 from keys import *
 from recover_key import recover_private_key
@@ -61,4 +63,7 @@ def main_menu():
 setup_data_files()
 set_key_file()
 db.setup()
+setup_client_data()
+server_thread = threading.Thread(target=start_miner_server)
+server_thread.start()
 main_menu()
