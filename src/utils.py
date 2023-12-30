@@ -168,7 +168,7 @@ def get_all_transactions_in_block(chain, block_index):
 
     return user_transactions
 
-def get_block_miner(filename, index):
+def get_username_miner(filename, index):
     all_data = load_from_file(filename)
     db = Database()
     get_miner_username = db.fetch('SELECT username FROM users WHERE publickey=?', (all_data[index].transactions[-1].output[0], ))

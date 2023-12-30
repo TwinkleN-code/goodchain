@@ -160,11 +160,8 @@ cython_debug/
 #.idea/
 
 # Database
-/users.db
 myenv/
 /.ds_store
-transactions.dat
-key.txt
-blockchain.dat
-last_mined_timestamp.dat
+test.py
 data/
+node_data/

@@ -4,11 +4,11 @@ from cryptography.hazmat.primitives import hashes
 from notifications import notification
 from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
 from keys import fetch_decrypted_private_key
-from storage import load_from_file, save_to_file, transactions_file_path, blockchain_file_path, last_mined_timestamp_path
+from storage import *
 from utils import *
 import os
 import datetime
-
+from miner_client import send_data_to_all_servers, data_type
 DIFFICULTY = 5
 
 class Block:
@@ -105,12 +105,12 @@ class Blockchain:
         else:
             blocks = self.chain
         save_to_file(blocks, blockchain_file_path)
-        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path)
+        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path_client)
 
     def _load_last_mined_timestamp(self):
         # Check if the file exists
-        if os.path.exists(last_mined_timestamp_path):
-            time_stamp = load_from_file(last_mined_timestamp_path)
+        if os.path.exists(last_mined_timestamp_path_client):
+            time_stamp = load_from_file(last_mined_timestamp_path_client)
             if time_stamp:
                 # Load the last mined timestamp from the file
                 return time_stamp[0]
@@ -150,7 +150,7 @@ class Blockchain:
 
             # check if block is created by miner
             if i != 0:
-                miner_username = get_block_miner(blockchain_file_path, i)
+                miner_username = get_username_miner(blockchain_file_path_client, i)
                 if miner_username == current_user:
                     continue
 
@@ -175,7 +175,6 @@ class Blockchain:
             # 3. Check if block's hash meets the difficulty requirement
             if not current_hash[:self.difficulty] == '0' * self.difficulty:
                 print(f"Hash value in block {i} doesn't meet the difficulty requirements.")
-                # return False
                 current_block.validators.append((current_user, "invalid"))
                 if current_block.id not in invalid_blocks:  
                     invalid_blocks.append(current_block.id)
@@ -184,7 +183,6 @@ class Blockchain:
             for transaction in current_block.transactions:
                 if not transaction.is_valid():
                     print(f"Transaction {transaction} in block {i} is not valid.")
-                    # return False
                     current_block.validators.append((current_user, "invalid"))
                     if current_block.id not in invalid_blocks:  
                         invalid_blocks.append(current_block.id)
@@ -196,9 +194,11 @@ class Blockchain:
                 
             previous_hash = current_hash
 
-        #update in file
+        #update ledger
         if invalid_blocks or valid_pending_blocks:
             save_to_file(self.chain, blockchain_file_path)
+            # update invalid blocks to servers
+            send_data_to_all_servers((data_type[3], self.chain))
 
             #check if 3 flags
             check_validators(self.chain, current_user)
@@ -218,14 +218,14 @@ class Blockchain:
             return
         
         # new block can only be mined if every block is valid
-        load_chain = load_from_file(blockchain_file_path)
+        load_chain = load_from_file(blockchain_file_path_client)
         if load_chain:
             for block in reversed(load_chain):
                 if block.status != BLOCK_STATUS[1] and block.id != 0 and block.previous_hash != "0":
                     print(f"Mining is not possible until the validation of block {block.id} is completed.")
                     return
 
-        transactions = load_from_file(transactions_file_path)
+        transactions = load_from_file(transactions_file_path_client)
         transactions_to_mine = []
         indices_to_remove = []
         # Need to have 5 transactions to mine (4 transactions + mining reward)
@@ -233,7 +233,7 @@ class Blockchain:
             print("Not enough transactions to mine.")
             return
         elif len(transactions) >= 10:
-            transactions_list = get_all_transactions(transactions_file_path)
+            transactions_list = get_all_transactions(transactions_file_path_client)
             print("All Transactions: \n")
             for tx in transactions_list:
                 if len(tx) > 5:
@@ -278,16 +278,11 @@ class Blockchain:
                     return
             # Filter out the user-picked transactions
             filtered_transactions = [tx for tx in transactions if tx not in transactions_to_mine]
-            if len(transactions_to_mine) == 1:
-                remaining_slots = 8
-            elif len(transactions_to_mine) == 2:
-                remaining_slots = 7
-            elif len(transactions_to_mine) == 3:
-                remaining_slots = 6
-            elif len(transactions_to_mine) == 4:
-                remaining_slots = 5
-            elif len(transactions_to_mine) == 0:
-                remaining_slots = 9
+            for i in range(5):
+                if len(transactions_to_mine) == i:
+                    remaining_slots = 9 - i
+                    break
+
             sorted_transactions = sorted(filtered_transactions, key=lambda x: x.timestamp)  # Sort by timestamp
             for tx in sorted_transactions:
                 if remaining_slots > 0:
@@ -317,7 +312,7 @@ class Blockchain:
                         indices_to_remove.append(transactions.index(tx))
                         invalid_tx.append(tx)
 
-        #if all transactions from pool are invalid, there is nothing to mine
+        # if all transactions from pool are invalid, there is nothing to mine
         if transactions_to_mine == [] and indices_to_remove == []:
             print("There are no valid transactions to mine")
             return
@@ -350,20 +345,27 @@ class Blockchain:
             self.last_mined_timestamp = time.time()
 
             # Add the new block to the blockchain
-            self.add_block(new_block)
+            self.add_block(new_block) # adding to the main ledger
 
-            #add notification to user
+            # send new block from client to servers
+            send_data_to_all_servers((data_type[0], new_block))
+
+            # add notification to user
             notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
             notification.add_notification(username, f"pending mining reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
-        #removing transactions from pool
+        # removing transactions from pool
         for index in sorted(indices_to_remove, reverse=True):
-            remove_from_file(transactions_file_path, index)
+            remove_from_file(transactions_file_path, index) # remove from main pool
+            # send transaction to servers 
+            send_data_to_all_servers((data_type[2], index))
         
-        #update invalid transactions
+        # update invalid transactions
         if invalid_tx:
             for tx in invalid_tx:
-                transaction_pool.add_transaction(tx)
+                transaction_pool.add_transaction(tx, transactions_file_path) # add to main pool
+                # send transaction to servers
+                send_data_to_all_servers((data_type[1], tx))
 
     def view_blockchain(self, username=None):
         print_header(username)
@@ -380,7 +382,7 @@ class Blockchain:
                 if block.previous_hash == "0":
                     print(f"Genesis Block created at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
                 else:
-                    block_miner = get_block_miner(blockchain_file_path, chain.index(block))
+                    block_miner = get_username_miner(blockchain_file_path, chain.index(block))
                     print(f"{chain.index(block)}. Block mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')} [{block.status}]")
 
         print(f"{len(chain)}. Back to main menu\n")
@@ -411,7 +413,7 @@ class Blockchain:
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)
-        block_miner = get_block_miner(blockchain_file_path, block_index)
+        block_miner = get_username_miner(blockchain_file_path, block_index)
         validators = chain[block_index].validators
         transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nStatus: {chain[block_index].status}\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nDifficulty: {chain[block_index].difficulty}\nPrevious_hash: {chain[block_index].previous_hash}"
         if len(validators) > 0:
@@ -467,18 +469,24 @@ def check_validators(chain, miner_username):
         list_transactions = chain[-1].transactions
         # put transactions back in pool
         for tx in list_transactions[:-1]: #skips the reward transaction of miner
-            transaction_pool.add_transaction(tx)
+            transaction_pool.add_transaction(tx, transactions_file_path)
+            # send transaction to servers
+            send_data_to_all_servers((data_type[1], tx))
 
         # remove block from blockchain
         remove_from_file(blockchain_file_path, len(chain)-1)
+        # send block to servers
+        send_data_to_all_servers((data_type[4], len(chain)-1))
 
         if chain[-1].id == 1:
             remove_from_file(blockchain_file_path, 0)
+            send_data_to_all_servers((data_type[4], 0))
 
         #notify user's rejected block
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
         return
 
-    #update in file
+    #update ledger
     save_to_file(chain, blockchain_file_path)
+    send_data_to_all_servers((data_type[3], chain))
     return

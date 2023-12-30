@@ -134,6 +134,7 @@ class User:
             print_header(username)
             print('Login successful')
             self.current_user = username
+            user_object.current_user = username
         else:
             print_header()
             print('Invalid username or password')
@@ -637,3 +638,5 @@ class User:
         if choice_result == "back":
             print_header(self.current_user)
             return
+        
+user_object = User()
