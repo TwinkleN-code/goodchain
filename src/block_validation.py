@@ -43,8 +43,7 @@ def automatic_tasks(username):
     block_valid(username)
 
     # check if user has invalid transactions and cancel it
-    cancel_invalid_transactions(username) 
-
+    cancel_invalid_transactions(username)
 
 
 def validation_chain(current_user):

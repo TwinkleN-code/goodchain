@@ -21,4 +21,3 @@ def send_data_to_all_servers(data):
             client.close()
         except ConnectionRefusedError:
             continue
-    
