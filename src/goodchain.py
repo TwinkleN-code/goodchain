@@ -3,7 +3,7 @@ from auth import User
 from database import Database
 from notifications import notification
 from block_validation import validation_chain
-from miner_server import handle_termination_server, server_thread, start_miner_server
+from miner_server import handle_termination_server, start_miner_server
 from storage import setup_data_files
 from transaction import Transaction
 from keys import *

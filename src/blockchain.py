@@ -150,7 +150,7 @@ class Blockchain:
 
             # check if block is created by miner
             if i != 0:
-                miner_username = get_block_miner(blockchain_file_path, i)
+                miner_username = get_username_miner(blockchain_file_path_client, i)
                 if miner_username == current_user:
                     continue
 
@@ -175,7 +175,6 @@ class Blockchain:
             # 3. Check if block's hash meets the difficulty requirement
             if not current_hash[:self.difficulty] == '0' * self.difficulty:
                 print(f"Hash value in block {i} doesn't meet the difficulty requirements.")
-                # return False
                 current_block.validators.append((current_user, "invalid"))
                 if current_block.id not in invalid_blocks:  
                     invalid_blocks.append(current_block.id)
@@ -184,7 +183,6 @@ class Blockchain:
             for transaction in current_block.transactions:
                 if not transaction.is_valid():
                     print(f"Transaction {transaction} in block {i} is not valid.")
-                    # return False
                     current_block.validators.append((current_user, "invalid"))
                     if current_block.id not in invalid_blocks:  
                         invalid_blocks.append(current_block.id)
@@ -196,9 +194,11 @@ class Blockchain:
                 
             previous_hash = current_hash
 
-        #update in file
+        #update ledger
         if invalid_blocks or valid_pending_blocks:
             save_to_file(self.chain, blockchain_file_path)
+            # update invalid blocks to servers
+            send_data_to_all_servers((data_type[3], self.chain))
 
             #check if 3 flags
             check_validators(self.chain, current_user)
@@ -382,7 +382,7 @@ class Blockchain:
                 if block.previous_hash == "0":
                     print(f"Genesis Block created at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')}")
                 else:
-                    block_miner = get_block_miner(blockchain_file_path, chain.index(block))
+                    block_miner = get_username_miner(blockchain_file_path, chain.index(block))
                     print(f"{chain.index(block)}. Block mined by {block_miner} at: {datetime.datetime.fromtimestamp(block.timestamp).strftime('%d-%m-%Y %H:%M:%S')} [{block.status}]")
 
         print(f"{len(chain)}. Back to main menu\n")
@@ -413,7 +413,7 @@ class Blockchain:
         {"option": "2", "text": "Back to main menu", "action": lambda: "back"}
         ]
         transactions = get_all_transactions_in_block(chain, block_index)
-        block_miner = get_block_miner(blockchain_file_path, block_index)
+        block_miner = get_username_miner(blockchain_file_path, block_index)
         validators = chain[block_index].validators
         transactions_to_display =  f"Block {block_index}: \n\nBlock ID: {chain[block_index].id} \nStatus: {chain[block_index].status}\nMined by {block_miner} at: {datetime.datetime.fromtimestamp(chain[block_index].timestamp).strftime('%d-%m-%Y %H:%M:%S')}\nHash: {chain[block_index].hash}\nNonce: {chain[block_index].nonce}\nDifficulty: {chain[block_index].difficulty}\nPrevious_hash: {chain[block_index].previous_hash}"
         if len(validators) > 0:
@@ -469,18 +469,24 @@ def check_validators(chain, miner_username):
         list_transactions = chain[-1].transactions
         # put transactions back in pool
         for tx in list_transactions[:-1]: #skips the reward transaction of miner
-            transaction_pool.add_transaction(tx)
+            transaction_pool.add_transaction(tx, transactions_file_path)
+            # send transaction to servers
+            send_data_to_all_servers((data_type[1], tx))
 
         # remove block from blockchain
         remove_from_file(blockchain_file_path, len(chain)-1)
+        # send block to servers
+        send_data_to_all_servers((data_type[4], len(chain)-1))
 
         if chain[-1].id == 1:
             remove_from_file(blockchain_file_path, 0)
+            send_data_to_all_servers((data_type[4], 0))
 
         #notify user's rejected block
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
         return
 
-    #update in file
+    #update ledger
     save_to_file(chain, blockchain_file_path)
+    send_data_to_all_servers((data_type[3], chain))
     return

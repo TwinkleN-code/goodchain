@@ -1,7 +1,7 @@
 import pickle
 import socket
 
-data_type = ["add block", "add transaction" , "remove transaction", "block validation"]
+data_type = ["add block", "add transaction" , "remove transaction", "block validation", "remove block"]
 server_ports = [5000, 6000]
          
 def send_data_to_all_servers(data):

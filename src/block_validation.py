@@ -1,18 +1,19 @@
 from blockchain import Blockchain, check_validators
+from miner_client import send_data_to_all_servers, data_type 
 from transaction import cancel_invalid_transactions
-from utils import display_menu_and_get_choice, get_block_miner, print_header, BLOCK_STATUS
-from storage import load_from_file, save_to_file, blockchain_file_path
+from utils import display_menu_and_get_choice, get_username_miner, print_header, BLOCK_STATUS
+from storage import load_from_file, save_to_file, blockchain_file_path_client, blockchain_file_path
 
 
 def block_valid(current_user):
     # check if there is a pending block
-    chain = load_from_file(blockchain_file_path)
+    chain = load_from_file(blockchain_file_path_client)
 
     if len(chain) <= 1:
         return
     
     previous_block = chain[-2] if len(chain) > 2 else chain[0]
-    miner_username = get_block_miner(blockchain_file_path, -1)
+    miner_username = get_username_miner(blockchain_file_path_client, -1)
     # if there is a pending block
     if chain[-1].status == BLOCK_STATUS[0] and miner_username != current_user:
         # check if already validated by current user
@@ -32,8 +33,9 @@ def block_valid(current_user):
         if len(chain[-1].validators) >= 3:
             check_validators(chain, miner_username)
         else:
-            #update in file
+            #update ledger
             save_to_file(chain, blockchain_file_path)
+            send_data_to_all_servers((data_type[3], chain))
     return
 
 def automatic_tasks(username):
@@ -41,20 +43,20 @@ def automatic_tasks(username):
     block_valid(username)
 
     # check if user has invalid transactions and cancel it
-    cancel_invalid_transactions(username)
+    cancel_invalid_transactions(username) 
 
 
 
 def validation_chain(current_user):
     print_header(current_user)
     block_chain = Blockchain()
-    block_chain.chain = load_from_file(blockchain_file_path)
+    block_chain.chain = load_from_file(blockchain_file_path_client)
     text = ""
     # if file is empty return
     if not block_chain.chain:
         print("Validation is not possible as the blockchain is currently empty.")
         return
-    result = block_chain.blockchain_is_valid(current_user)
+    result = block_chain.blockchain_is_valid(current_user) 
     if len(result) == 0:
         print_header(current_user)
         text += "Blockchain has valid blocks"

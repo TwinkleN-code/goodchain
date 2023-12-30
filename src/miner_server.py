@@ -6,7 +6,7 @@ from transaction import TransactionPool
 from utils import remove_from_file
 from storage import load_from_file, save_to_file, setup_local_data, blockchain_file_path_client, transactions_file_path_client
 
-data_type = ["add block", "add transaction" , "remove transaction", "block validation"]
+data_type = ["add block", "add transaction" , "remove transaction", "block validation", "remove block"]
 server_ports = [5000, 6000]
 server = None
 stop_server_thread = False
@@ -31,7 +31,7 @@ def start_miner_server():
     server = setup_server()
 
     while True:
-        if not stop_server_thread:
+        if stop_server_thread:
             break
         
         client_socket, address = server.accept()
@@ -52,6 +52,8 @@ def handle_client(conn, addr):
                 remove_transaction(unpickled_data[1])
             elif unpickled_data[0] == data_type[3]:
                 block_validation(unpickled_data[1])
+            elif unpickled_data[0] == data_type[4]:
+                remove_block(unpickled_data[1])
     except pickle.UnpicklingError as e:
         print(f"Error data: {e}")
     except Exception as e:
@@ -80,9 +82,13 @@ def remove_transaction(transaction):
     # remove transaction from local pool
     remove_from_file(transactions_file_path_client, transaction)
 
-def block_validation(block):
-    # update blockchain
-    pass
+def block_validation(blockchain):
+    # update ledger
+    save_to_file(blockchain, blockchain_file_path_client)
+
+def remove_block(block):
+    # remove block from ledger
+    remove_from_file(blockchain_file_path_client, block)
 
 def handle_termination_server():
     global stop_server_thread
@@ -90,7 +96,3 @@ def handle_termination_server():
 
     if server:
         server.close()  # Close the server socket
-
-def server_thread():
-    server_thread = threading.Thread(target=start_miner_server)
-    server_thread.start()           
