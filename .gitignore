@@ -164,4 +164,4 @@ myenv/
 /.ds_store
 test.py
 data/
-client_data/
+node_data/

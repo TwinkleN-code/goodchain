@@ -3,14 +3,11 @@ import pickle
 import shutil
 
 data_folder = "data"
-client_data_folder = "client_data"
 blockchain_file_path = os.path.join(data_folder, 'blockchain.dat')
 transactions_file_path = os.path.join(data_folder, 'transactions.dat')
 last_mined_timestamp_path = os.path.join(data_folder, "last_mined_timestamp.dat")
 
-blockchain_file_path_client = os.path.join(client_data_folder, 'blockchain.dat')
-transactions_file_path_client = os.path.join(client_data_folder, 'transactions.dat')
-last_mined_timestamp_path_client = os.path.join(client_data_folder, "last_mined_timestamp.dat")
+node_data = "node_data"
 
 def save_to_file(data, filename):
     with open(filename, "wb") as file:
@@ -31,6 +28,9 @@ def setup_data_files():
     if not os.path.exists(data_folder):
         os.makedirs(data_folder)
 
+    if not os.path.exists(node_data):
+        os.makedirs(node_data)
+
     if not os.path.isfile(blockchain_file_path):
         data = []
         with open(blockchain_file_path, 'wb') as file:
@@ -46,10 +46,20 @@ def setup_data_files():
         with open(last_mined_timestamp_path, "wb") as file:
             pickle.dump(data, file)
 
-def setup_client_data():
-    # make local copies for the client
-    if not os.path.exists(client_data_folder):
-        os.makedirs(client_data_folder)
+def setup_local_data(foldername):
+    #global client_data_folder, blockchain_file_path_client, transactions_file_path_client, last_mined_timestamp_path_client
+
+    count = 1 
+    # make local copies for the node
+    client_data_folder = os.path.join(node_data, foldername + "_" + str(count))
+    while os.path.exists(client_data_folder):
+        count += 1
+        client_data_folder = os.path.join(node_data, foldername + "_" + str(count))
+    os.makedirs(client_data_folder)
+
+    blockchain_file_path_client = os.path.join(client_data_folder, 'blockchain.dat')
+    transactions_file_path_client = os.path.join(client_data_folder, 'transactions.dat')
+    last_mined_timestamp_path_client = os.path.join(client_data_folder, "last_mined_timestamp.dat")
 
     try:
         shutil.copy(blockchain_file_path, client_data_folder)
@@ -63,3 +73,7 @@ def setup_client_data():
         data = []
         with open(last_mined_timestamp_path_client, "wb") as file:
             pickle.dump(data, file)
+
+    return client_data_folder, blockchain_file_path_client, transactions_file_path_client, last_mined_timestamp_path_client
+
+client_data_folder, blockchain_file_path_client, transactions_file_path_client, last_mined_timestamp_path_client = setup_local_data("local_data")
