@@ -3,18 +3,17 @@ from auth import User
 from database import Database
 from notifications import notification
 from block_validation import validation_chain
-from miner_server import start_miner_server
-from storage import setup_client_data, setup_data_files
+from miner_server import handle_termination_server, server_thread, start_miner_server
+from storage import setup_data_files
 from transaction import Transaction
 from keys import *
 from recover_key import recover_private_key
-from utils import print_header, display_menu_and_get_choice
+from utils import clear_screen, print_header, display_menu_and_get_choice
 from blockchain import Blockchain
 
 user = User()
 db = Database()
 transaction = Transaction()
-blockchain = Blockchain()   
 
 def settings_menu():
     print_header(user.current_user)
@@ -27,6 +26,7 @@ def settings_menu():
     display_menu_and_get_choice(options, user.current_user)
 
 def display_menu(is_logged_in):
+    blockchain = Blockchain()   
     if is_logged_in:
         return [
             {"option": "1", "text": " View keys", "action": lambda: view_user_keys(user.current_user)}, 
@@ -58,12 +58,13 @@ def main_menu():
         options = display_menu(user.current_user is not None) # Assuming that user.current_user is None when not logged in
         choice_result = display_menu_and_get_choice(options, user.current_user)
         if choice_result == "exit":
-            break         
+            handle_termination_server()
+            clear_screen()
+            break      
 
 setup_data_files()
 set_key_file()
 db.setup()
-setup_client_data()
 server_thread = threading.Thread(target=start_miner_server)
 server_thread.start()
 main_menu()

@@ -13,7 +13,6 @@ def send_data_to_all_servers(data):
         try:
             client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             client.connect(server_address)
-            #print("Client connected to server with address:", server_address)
             
             # Serialize the data
             serialized_data = pickle.dumps(data)

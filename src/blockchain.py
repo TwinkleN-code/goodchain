@@ -105,12 +105,12 @@ class Blockchain:
         else:
             blocks = self.chain
         save_to_file(blocks, blockchain_file_path)
-        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path)
+        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path_client)
 
     def _load_last_mined_timestamp(self):
         # Check if the file exists
-        if os.path.exists(last_mined_timestamp_path):
-            time_stamp = load_from_file(last_mined_timestamp_path)
+        if os.path.exists(last_mined_timestamp_path_client):
+            time_stamp = load_from_file(last_mined_timestamp_path_client)
             if time_stamp:
                 # Load the last mined timestamp from the file
                 return time_stamp[0]
@@ -343,25 +343,27 @@ class Blockchain:
             self.last_mined_timestamp = time.time()
 
             # Add the new block to the blockchain
-            # self.add_block(new_block) 
+            self.add_block(new_block) # adding to the main ledger
 
-            # TODO send block to server
+            # send new block from client to servers
             send_data_to_all_servers((data_type[0], new_block))
 
             # add notification to user
-        #     notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
-        #     notification.add_notification(username, f"pending mining reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
+            notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
+            notification.add_notification(username, f"pending mining reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
-        # # removing transactions from pool
-        # for index in sorted(indices_to_remove, reverse=True):
-        #     remove_from_file(transactions_file_path, index)
-        #     # TODO send transaction to server to remove from pool
+        # removing transactions from pool
+        for index in sorted(indices_to_remove, reverse=True):
+            remove_from_file(transactions_file_path, index) # remove from main pool
+            # send transaction to servers 
+            send_data_to_all_servers((data_type[2], index))
         
-        # # update invalid transactions
-        # if invalid_tx:
-        #     for tx in invalid_tx:
-        #         transaction_pool.add_transaction(tx) 
-        #         # TODO send transaction to server to add to pool
+        # update invalid transactions
+        if invalid_tx:
+            for tx in invalid_tx:
+                transaction_pool.add_transaction(tx, transactions_file_path) # add to main pool
+                # send transaction to servers
+                send_data_to_all_servers((data_type[1], tx))
 
     def view_blockchain(self, username=None):
         print_header(username)

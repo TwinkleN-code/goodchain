@@ -12,14 +12,14 @@ class TransactionPool:
     def __init__(self):
         self.transactions = []
 
-    def add_transaction(self, transaction):
+    def add_transaction(self, transaction, filename):
         self.transactions.append(transaction)
-        self._save_transaction_to_file(transaction)
+        self._save_transaction_to_file(transaction, filename)
     
-    def _save_transaction_to_file(self, transaction):
-        transactions = load_from_file(transactions_file_path)
+    def _save_transaction_to_file(self, transaction, filename):
+        transactions = load_from_file(filename)
         transactions.append(transaction)
-        save_to_file(transactions, transactions_file_path)
+        save_to_file(transactions, filename)
 
 transaction_pool = TransactionPool()
 

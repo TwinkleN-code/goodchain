@@ -1,21 +1,25 @@
 import pickle
 import socket
 import threading
+from blockchain import Blockchain
+from transaction import TransactionPool
+from utils import remove_from_file
+from storage import load_from_file, save_to_file, setup_local_data, blockchain_file_path_client, transactions_file_path_client
 
 data_type = ["add block", "add transaction" , "remove transaction", "block validation"]
 server_ports = [5000, 6000]
+server = None
+stop_server_thread = False
 
 def setup_server():
+    global server
     for port in server_ports:
         try:
             local_ip = socket.gethostbyname('localhost')
-            server_address = (local_ip, port)
-            
+            server_address = (local_ip, port)           
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server.bind(server_address)
             server.listen()
-            
-            #print(f"Server started on address: {server_address}")
             return server
             
         except OSError:
@@ -23,8 +27,13 @@ def setup_server():
 
 
 def start_miner_server():
+    global server, stop_server_thread
     server = setup_server()
+
     while True:
+        if not stop_server_thread:
+            break
+        
         client_socket, address = server.accept()
         thread = threading.Thread(target=handle_client, args=(client_socket, address))
         thread.start()
@@ -50,26 +59,38 @@ def handle_client(conn, addr):
     finally:
         conn.close()
 
-def add_block(block):
-    # add block to ledger
-    print("received block")
-    pass
+def add_block(new_block):
+    # add new block to local ledger
+    blocks = load_from_file(blockchain_file_path_client)
+    if len(blocks) > 0: 
+        blocks.append(new_block)
+    else:
+        bc = Blockchain()
+        bc.chain.append(new_block)
+        blocks = bc.chain
+    save_to_file(blocks, blockchain_file_path_client)
 
+    
 def add_transaction(transaction):
-    # add transaction 
-    pass
+    # add transaction to local pool
+    tp = TransactionPool()
+    tp.add_transaction(transaction, transactions_file_path_client)
 
 def remove_transaction(transaction):
-    # remove transaction from pool
-    pass
+    # remove transaction from local pool
+    remove_from_file(transactions_file_path_client, transaction)
 
 def block_validation(block):
     # update blockchain
     pass
-           
-# def send_msg(conn, msg):
-#     conn.send(msg.encode(FORMAT))
-#     print(f'Message sent: {msg}')
-    
 
+def handle_termination_server():
+    global stop_server_thread
+    stop_server_thread = True
 
+    if server:
+        server.close()  # Close the server socket
+
+def server_thread():
+    server_thread = threading.Thread(target=start_miner_server)
+    server_thread.start()           
