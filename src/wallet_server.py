@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 
 db = Database()
 
-data_type_wallet = ["new user", "update password", "update username"]
+data_type_wallet = ["new user", "update password", "update username", "add notification", "add notification to all users"]
 wallet_server_port = 8000
 server = None
 stop_server_thread = False
@@ -69,6 +69,10 @@ def handle_client(conn, addr):
                 update_password(unpickled_data[0][1], unpickled_data[0][2])
             elif unpickled_data[0][0] == data_type_wallet[2]:
                 update_username(unpickled_data[0][1], unpickled_data[0][2])
+            elif unpickled_data[0][0] == data_type_wallet[3]:
+                add_notification(unpickled_data[0][1], unpickled_data[0][2])
+            elif unpickled_data[0][0] == data_type_wallet[4]:
+                add_notification_to_all_users(unpickled_data[0][1], unpickled_data[0][2] if len(unpickled_data[0]) > 2 else None)
     except pickle.UnpicklingError as e:
         logging.error(f"Error in data from {addr}: {e}")
     except Exception as e:
@@ -100,6 +104,25 @@ def update_username(user, new_username):
         db.execute('UPDATE users SET username=? WHERE username=?', (new_username, user))
     except sqlite3.IntegrityError:
         print('Username is already taken')
+
+def add_notification(user, message):
+    # add notification to local database
+    try:
+        db.execute('INSERT INTO notifications (ID, notification) VALUES (?, ?)', (user, message))
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+
+def add_notification_to_all_users(message, exclude_user=None):
+    # add notification to all users in local database
+    list_user = get_all_users()
+    users = db.fetch('SELECT username FROM users')
+    for user in list_user:
+        if exclude_user != user:
+            add_notification(user, message)
+
+def get_all_users():
+        results = db.fetch("SELECT username FROM users")
+        return [result[0] for result in results] if results else []
 
 def handle_wallet_termination_server():
     global stop_server_thread

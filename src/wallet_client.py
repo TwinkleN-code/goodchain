@@ -6,7 +6,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 data_type_miner = ["add block", "add transaction", "remove transaction", "block validation", "remove block"]
-data_type_wallet = ["new user", "update password", "update username"]
+data_type_wallet = ["new user", "update password", "update username", "add notification", "add notification to all users"]
 wallet_server_port = 8000
 miner_server_port = 9000
 
