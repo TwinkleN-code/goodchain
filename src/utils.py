@@ -9,7 +9,8 @@ from storage import load_from_file, save_to_file, blockchain_file_path, transact
 BLOCK_STATUS = ["pending", "verified", "rejected", "genesis"]
 
 def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
+    # os.system('cls' if os.name == 'nt' else 'clear')
+    pass
 
 def display_menu_and_get_choice(options , username=None, *args):
     """Display menu based on the provided options and get user's choice."""

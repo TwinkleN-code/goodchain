@@ -2,42 +2,46 @@ import pickle
 import socket
 import threading
 import sqlite3
+import logging
 from transaction import TransactionPool
 from database import Database
 from keys import save_key
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+
 db = Database()
 
 data_type_wallet = ["new user", "update password", "update username"]
-wallet_server_ports = [8000, 9000]
+wallet_server_port = 8000
 server = None
 stop_server_thread = False
 server_lock = threading.Lock()
 
 def setup_server():
     global server
-    for port in wallet_server_ports:
-        try:
-            local_ip = socket.gethostbyname('localhost')
-            server_address = (local_ip, port)  
+    try:
+        server_address = ('0.0.0.0', wallet_server_port)  
 
-            if server is not None:
-                server.close()
+        if server is not None:
+            server.close()
 
 
-            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            server.bind(server_address)
-            server.listen()
-            return server
-            
-        except OSError:
-            continue
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(server_address)
+        server.listen()
+        logging.info(f"Server listening on {server_address}")
+        return server
+        
+    except OSError:
+        logging.error("Error setting up the server")
+        exit()
 
 def start_wallet_server():
     global server, stop_server_thread
     server = setup_server()
     if server is None:
-        print("Failed to set up a server.")
+        logging.error("Failed to set up a server.")
         return
 
     while True:
@@ -47,17 +51,18 @@ def start_wallet_server():
         with server_lock:
             try:
                 client_socket, address = server.accept()
+                logging.info(f"Accepted connection from {address}")
             except OSError as e:
                 continue
         thread = threading.Thread(target=handle_client, args=(client_socket, address))
         thread.start()
-
 
 def handle_client(conn, addr):
     try:
         received_data = conn.recv(8888)
         if received_data:
             unpickled_data = pickle.loads(received_data)
+            logging.info(f"Received data from {addr}: {unpickled_data}")
             if unpickled_data[0] == data_type_wallet[0]:
                 new_user(unpickled_data[1:])
             elif unpickled_data[0] == data_type_wallet[1]:
@@ -65,9 +70,9 @@ def handle_client(conn, addr):
             elif unpickled_data[0] == data_type_wallet[2]:
                 update_username(unpickled_data[1:])
     except pickle.UnpicklingError as e:
-        print(f"Error data: {e}")
+        logging.error(f"Error in data from {addr}: {e}")
     except Exception as e:
-        print(f"Error handling client: {e}")
+        logging.error(f"Error handling client {addr}: {e}")
     finally:
         conn.close()
 
