@@ -58,8 +58,8 @@ def main_menu():
         options = display_menu(user.current_user is not None) # Assuming that user.current_user is None when not logged in
         choice_result = display_menu_and_get_choice(options, user.current_user)
         if choice_result == "exit":
-            #handle_termination_server()
-            clear_screen()
+            handle_termination_server()
+            #clear_screen()
             break     
 
 setup_data_files()
