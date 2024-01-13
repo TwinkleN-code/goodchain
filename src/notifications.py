@@ -40,7 +40,7 @@ class Notification:
         for user in list_user:
             if exclude_user != user:
                 self.add_notification(user, message)
-        send_data_to_wallet_servers([data_type_wallet[4], message, exclude_user = None])
+        send_data_to_wallet_servers([data_type_wallet[4], message, exclude_user if exclude_user else None])
         
     def get_current_time(self):
         return (datetime.now()).strftime("%d-%m-%Y %H:%M")
