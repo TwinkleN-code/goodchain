@@ -8,7 +8,7 @@ from utils import remove_from_file
 from storage import load_from_file, save_to_file, blockchain_file_path_client, transactions_file_path_client
 from auth import user_object
 
-data_type = ["add block", "add transaction" , "remove transaction", "block validation", "remove block"]
+data_type_miner = ["add block", "add transaction" , "remove transaction", "block validation", "remove block", "update transaction"]
 miner_server_ports = [5000, 6000]
 server = None
 stop_server_thread = False
@@ -59,15 +59,15 @@ def handle_client(conn, addr):
         received_data = conn.recv(8888)
         if received_data:
             unpickled_data = pickle.loads(received_data)
-            if unpickled_data[0] == data_type[0]:
+            if unpickled_data[0] == data_type_miner[0]:
                 add_block(unpickled_data[1])
-            elif unpickled_data[0] == data_type[1]:
+            elif unpickled_data[0] == data_type_miner[1]:
                 add_transaction(unpickled_data[1])
-            elif unpickled_data[0] == data_type[2]:
+            elif unpickled_data[0] == data_type_miner[2]:
                 remove_transaction(unpickled_data[1])
-            elif unpickled_data[0] == data_type[3]:
+            elif unpickled_data[0] == data_type_miner[3]:
                 block_validation(unpickled_data[1])
-            elif unpickled_data[0] == data_type[4]:
+            elif unpickled_data[0] == data_type_miner[4]:
                 remove_block(unpickled_data[1])
     except pickle.UnpicklingError as e:
         print(f"Error data: {e}")

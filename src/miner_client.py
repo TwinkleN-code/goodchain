@@ -1,7 +1,7 @@
 import pickle
 import socket
 
-data_type = ["add block", "add transaction", "remove transaction", "block validation", "remove block"]
+data_type_miner = ["add block", "add transaction", "remove transaction", "block validation", "remove block", "update transaction"]
 miner_server_ports = [5000, 6000]
          
 def send_data_to_miner_servers(data):

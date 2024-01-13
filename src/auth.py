@@ -10,6 +10,7 @@ from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file, blockchain_file_path_client, transactions_file_path_client, transactions_file_path, blockchain_file_path
 import hashlib
+from wallet_client import send_data_to_miner_servers, send_data_to_wallet_servers, data_type_wallet
 
 PEPPER = b"MySecretPepperValue"
 

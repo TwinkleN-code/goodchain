@@ -8,7 +8,7 @@ from storage import *
 from utils import *
 import os
 import datetime
-from miner_client import send_data_to_miner_servers, data_type
+from miner_client import send_data_to_miner_servers, data_type_miner
 DIFFICULTY = 5
 
 class Block:
@@ -198,7 +198,7 @@ class Blockchain:
         if invalid_blocks or valid_pending_blocks:
             save_to_file(self.chain, blockchain_file_path)
             # update invalid blocks to servers
-            send_data_to_miner_servers((data_type[3], self.chain))
+            send_data_to_miner_servers((data_type_miner[3], self.chain))
 
             #check if 3 flags
             check_validators(self.chain, current_user)
@@ -348,7 +348,7 @@ class Blockchain:
             self.add_block(new_block) # adding to the main ledger
 
             # send new block from client to servers
-            send_data_to_miner_servers((data_type[0], new_block))
+            send_data_to_miner_servers((data_type_miner[0], new_block))
 
             # add notification to user
             notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
@@ -358,14 +358,14 @@ class Blockchain:
         for index in sorted(indices_to_remove, reverse=True):
             remove_from_file(transactions_file_path, index) # remove from main pool
             # send transaction to servers 
-            send_data_to_miner_servers((data_type[2], index))
+            send_data_to_miner_servers((data_type_miner[2], index))
         
         # update invalid transactions
         if invalid_tx:
             for tx in invalid_tx:
                 transaction_pool.add_transaction(tx, transactions_file_path) # add to main pool
                 # send transaction to servers
-                send_data_to_miner_servers((data_type[1], tx))
+                send_data_to_miner_servers((data_type_miner[1], tx))
 
     def view_blockchain(self, username=None):
         print_header(username)
@@ -471,16 +471,16 @@ def check_validators(chain, miner_username):
         for tx in list_transactions[:-1]: #skips the reward transaction of miner
             transaction_pool.add_transaction(tx, transactions_file_path)
             # send transaction to servers
-            send_data_to_miner_servers((data_type[1], tx))
+            send_data_to_miner_servers((data_type_miner[1], tx))
 
         # remove block from blockchain
         remove_from_file(blockchain_file_path, len(chain)-1)
         # send block to servers
-        send_data_to_miner_servers((data_type[4], len(chain)-1))
+        send_data_to_miner_servers((data_type_miner[4], len(chain)-1))
 
         if chain[-1].id == 1:
             remove_from_file(blockchain_file_path, 0)
-            send_data_to_miner_servers((data_type[4], 0))
+            send_data_to_miner_servers((data_type_miner[4], 0))
 
         #notify user's rejected block
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
@@ -488,5 +488,5 @@ def check_validators(chain, miner_username):
 
     #update ledger
     save_to_file(chain, blockchain_file_path)
-    send_data_to_miner_servers((data_type[3], chain))
+    send_data_to_miner_servers((data_type_miner[3], chain))
     return

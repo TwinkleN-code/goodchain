@@ -1,8 +1,13 @@
 import pickle
 import socket
 import threading
+import sqlite3
+from transaction import TransactionPool
+from database import Database
 
-data_type = ["new user", "update password", "update username"]
+db = Database()
+
+data_type_wallet = ["new user", "update password", "update username"]
 wallet_server_ports = [8000, 9000]
 server = None
 stop_server_thread = False
@@ -52,12 +57,12 @@ def handle_client(conn, addr):
         received_data = conn.recv(8888)
         if received_data:
             unpickled_data = pickle.loads(received_data)
-            if unpickled_data[0] == data_type[0]:
-                new_user(unpickled_data[1])
-            elif unpickled_data[0] == data_type[1]:
-                update_password(unpickled_data[1])
-            elif unpickled_data[0] == data_type[2]:
-                update_username(unpickled_data[1])
+            if unpickled_data[0] == data_type_wallet[0]:
+                new_user(unpickled_data[1:])
+            elif unpickled_data[0] == data_type_wallet[1]:
+                update_password(unpickled_data[1:])
+            elif unpickled_data[0] == data_type_wallet[2]:
+                update_username(unpickled_data[1:])
     except pickle.UnpicklingError as e:
         print(f"Error data: {e}")
     except Exception as e:
@@ -65,15 +70,18 @@ def handle_client(conn, addr):
     finally:
         conn.close()
 
-def new_user(user):
+def new_user(username, password, public_key, private_key, phrase):
     # add new user to local database
     pass
 
-def update_password(user):
+def update_password(user, new_password):
     # update password in local database
-    pass
+    try:
+        db.execute('UPDATE users SET password=? WHERE username=?', (new_password, user))
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
 
-def update_username(user):
+def update_username(user, new_username):
     # update username in local database
     pass
 

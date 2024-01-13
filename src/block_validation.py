@@ -1,5 +1,5 @@
 from blockchain import Blockchain, check_validators
-from miner_client import send_data_to_miner_servers, data_type 
+from miner_client import send_data_to_miner_servers, data_type_miner 
 from transaction import cancel_invalid_transactions
 from utils import display_menu_and_get_choice, get_username_miner, print_header, BLOCK_STATUS
 from storage import load_from_file, save_to_file, blockchain_file_path_client, blockchain_file_path
@@ -35,7 +35,7 @@ def block_valid(current_user):
         else:
             #update ledger
             save_to_file(chain, blockchain_file_path)
-            send_data_to_miner_servers((data_type[3], chain))
+            send_data_to_miner_servers((data_type_miner[3], chain))
     return
 
 def automatic_tasks(username):
