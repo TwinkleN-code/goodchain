@@ -9,13 +9,13 @@ from storage import load_from_file, save_to_file, blockchain_file_path_client, t
 from auth import user_object
 
 data_type = ["add block", "add transaction" , "remove transaction", "block validation", "remove block"]
-server_ports = [5000, 6000]
+miner_server_ports = [5000, 6000]
 server = None
 stop_server_thread = False
 
 def setup_server():
     global server
-    for port in server_ports:
+    for port in miner_server_ports:
         try:
             local_ip = socket.gethostbyname('localhost')
             server_address = (local_ip, port)           

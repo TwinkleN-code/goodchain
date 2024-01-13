@@ -1,6 +1,6 @@
 from notifications import notification
 from database import Database
-from miner_client import send_data_to_all_servers, data_type
+from miner_client import send_data_to_miner_servers, data_type
 from utils import BLOCK_STATUS, calculate_balance, calculate_pending_balance, get_current_user_public_key, remove_from_file, sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
 from storage import save_to_file, load_from_file, transactions_file_path_client, transactions_file_path, blockchain_file_path
 import time
@@ -155,7 +155,7 @@ def cancel_invalid_transactions(username):
                         # delete from pool
                         remove_from_file(transactions_file_path, index)
                         # send to servers
-                        send_data_to_all_servers((data_type[2], index)) 
+                        send_data_to_miner_servers((data_type[2], index)) 
                         #notify user
                         receiver = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
                         if receiver:
@@ -164,7 +164,7 @@ def cancel_invalid_transactions(username):
                 if tx.output[0] == public_key:
                     if len(tx.validators) > 0:
                         remove_from_file(transactions_file_path, index)
-                        send_data_to_all_servers((data_type[2], index))
+                        send_data_to_miner_servers((data_type[2], index))
                         receiver = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
                         notification.add_notification(username, f"reward of {tx.input[1]} coin(s) rejected")   
             

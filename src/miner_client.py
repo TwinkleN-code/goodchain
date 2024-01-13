@@ -1,13 +1,13 @@
 import pickle
 import socket
 
-data_type = ["add block", "add transaction" , "remove transaction", "block validation", "remove block"]
-server_ports = [5000, 6000]
+data_type = ["add block", "add transaction", "remove transaction", "block validation", "remove block"]
+miner_server_ports = [5000, 6000]
          
-def send_data_to_all_servers(data):
+def send_data_to_miner_servers(data):
     local_ip = socket.gethostbyname('localhost')
     
-    for port in server_ports:
+    for port in miner_server_ports:
         server_address = (local_ip, port)
 
         try:
