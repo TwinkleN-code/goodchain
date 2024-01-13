@@ -4,6 +4,7 @@ from miner_client import send_data_to_miner_servers, data_type_miner
 from utils import BLOCK_STATUS, calculate_balance, calculate_pending_balance, get_current_user_public_key, remove_from_file, sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
 from storage import save_to_file, load_from_file, transactions_file_path_client, transactions_file_path, blockchain_file_path
 import time
+from wallet_client import send_data_to_miner_servers
 
 REWARD_VALUE = 50
 NORMAL = 0
@@ -16,6 +17,7 @@ class TransactionPool:
     def add_transaction(self, transaction, filename):
         self.transactions.append(transaction)
         self._save_transaction_to_file(transaction, filename)
+        send_data_to_miner_servers((data_type_miner[1], transaction))
     
     def _save_transaction_to_file(self, transaction, filename):
         transactions = load_from_file(filename)

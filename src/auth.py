@@ -10,7 +10,7 @@ from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
 from storage import load_from_file, blockchain_file_path_client, transactions_file_path_client, transactions_file_path, blockchain_file_path
 import hashlib
-from wallet_client import send_data_to_miner_servers, send_data_to_wallet_servers, data_type_wallet
+from wallet_client import send_data_to_miner_servers, send_data_to_wallet_servers, data_type_wallet, data_type_miner
 
 PEPPER = b"MySecretPepperValue"
 
@@ -358,6 +358,7 @@ class User:
             # delete from pool
             index = find_index_from_file(transactions_file_path, transactions[choice-1][1], get_current_user_public_key(self.current_user), get_current_user_public_key(transactions[choice-1][2]), transactions[choice-1][3])
             remove = remove_from_file(transactions_file_path, index)
+            send_data_to_miner_servers((data_type_miner[2], index))
             if remove:
                 print_header(self.current_user)
                 print("Transaction canceled")
@@ -546,6 +547,7 @@ class User:
             
             # remove old transaction
             remove = remove_from_file(transactions_file_path, index)
+            send_data_to_miner_servers((data_type_miner[2], index))
 
             # check validation after old one is removed
             if not tx.is_valid(): 
@@ -556,6 +558,7 @@ class User:
             # add transaction
             if remove:
                 transaction_pool.add_transaction(tx, transactions_file_path)
+                send_data_to_miner_servers((data_type_miner[1], tx))
                 print_header(self.current_user)
                 print('Transaction modified successfully')
                 return

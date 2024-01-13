@@ -1,7 +1,7 @@
 import pickle
 import socket
 
-data_type_miner = ["add block", "add transaction", "remove transaction", "block validation", "remove block", "update transaction"]
+data_type_miner = ["add block", "add transaction", "remove transaction", "block validation", "remove block"]
 data_type_wallet = ["new user", "update password", "update username"]
 wallet_server_ports = [8000, 9000]
 miner_server_ports = [5000, 6000]
