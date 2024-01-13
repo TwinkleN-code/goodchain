@@ -2,7 +2,7 @@ from datetime import datetime
 from keys import decrypt, encrypt, read_key
 from database import Database
 from utils import display_menu_and_get_choice, print_header
-from wallet_server import data_type_wallet, send_data_to_wallet_servers
+from wallet_client import data_type_wallet, send_data_to_wallet_servers
 
 class Notification:
     def __init__(self):

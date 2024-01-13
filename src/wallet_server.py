@@ -3,7 +3,6 @@ import socket
 import threading
 import sqlite3
 import logging
-from transaction import TransactionPool
 from database import Database
 from keys import save_key
 
