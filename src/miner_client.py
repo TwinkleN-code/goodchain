@@ -2,22 +2,20 @@ import pickle
 import socket
 
 data_type_miner = ["add block", "add transaction", "remove transaction", "block validation", "remove block", "update transaction"]
-miner_server_ports = [5000, 6000]
+miner_server_port = 9000
          
 def send_data_to_miner_servers(data):
-    local_ip = socket.gethostbyname('localhost')
-    
-    for port in miner_server_ports:
-        server_address = (local_ip, port)
+    server_ip = '0.0.0.0'
+    server_address = (server_ip, miner_server_port)
 
-        try:
-            client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client.connect(server_address)
-            
-            # Serialize the data
-            serialized_data = pickle.dumps(data)
-            client.sendall(serialized_data)
-            
-            client.close()
-        except ConnectionRefusedError:
-            continue
+    try:
+        client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client.connect(server_address)
+        
+        # Serialize the data
+        serialized_data = pickle.dumps(data)
+        client.sendall(serialized_data)
+        
+        client.close()
+    except ConnectionRefusedError:
+        exit()

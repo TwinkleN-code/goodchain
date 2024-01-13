@@ -9,29 +9,27 @@ from storage import load_from_file, save_to_file, blockchain_file_path_client, t
 from auth import user_object
 
 data_type_miner = ["add block", "add transaction" , "remove transaction", "block validation", "remove block", "update transaction"]
-miner_server_ports = [5000, 6000]
+miner_server_ports = 9000
 server = None
 stop_server_thread = False
 server_lock = threading.Lock()
 
 def setup_server():
     global server
-    for port in miner_server_ports:
-        try:
-            local_ip = socket.gethostbyname('localhost')
-            server_address = (local_ip, port)  
+    try:
+        server_address = ('0.0.0.0', miner_server_ports)   
 
-            if server is not None:
-                server.close()
+        if server is not None:
+            server.close()
 
 
-            server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            server.bind(server_address)
-            server.listen()
-            return server
-            
-        except OSError:
-            continue
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(server_address)
+        server.listen()
+        return server
+        
+    except OSError:
+        exit()
 
 
 def start_miner_server():
