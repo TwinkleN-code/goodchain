@@ -4,6 +4,7 @@ import threading
 import sqlite3
 from transaction import TransactionPool
 from database import Database
+from keys import save_key
 
 db = Database()
 
@@ -72,7 +73,13 @@ def handle_client(conn, addr):
 
 def new_user(username, password, public_key, private_key, phrase):
     # add new user to local database
-    pass
+    try:
+        db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, password, private_key, public_key, phrase))
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return
+    # update key file
+    save_key(private_key)
 
 def update_password(user, new_password):
     # update password in local database
@@ -83,7 +90,10 @@ def update_password(user, new_password):
 
 def update_username(user, new_username):
     # update username in local database
-    pass
+    try:
+        db.execute('UPDATE users SET username=? WHERE username=?', (new_username, user))
+    except sqlite3.IntegrityError:
+        print('Username is already taken')
 
 def handle_wallet_termination_server():
     global stop_server_thread

