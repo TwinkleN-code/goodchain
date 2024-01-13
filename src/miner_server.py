@@ -12,13 +12,19 @@ data_type = ["add block", "add transaction" , "remove transaction", "block valid
 miner_server_ports = [5000, 6000]
 server = None
 stop_server_thread = False
+server_lock = threading.Lock()
 
 def setup_server():
     global server
     for port in miner_server_ports:
         try:
             local_ip = socket.gethostbyname('localhost')
-            server_address = (local_ip, port)           
+            server_address = (local_ip, port)  
+
+            if server is not None:
+                server.close()
+
+
             server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             server.bind(server_address)
             server.listen()
@@ -31,12 +37,19 @@ def setup_server():
 def start_miner_server():
     global server, stop_server_thread
     server = setup_server()
+    if server is None:
+        print("Failed to set up a server.")
+        return
 
     while True:
         if stop_server_thread:
             break
         
-        client_socket, address = server.accept()
+        with server_lock:
+            try:
+                client_socket, address = server.accept()
+            except OSError as e:
+                continue
         thread = threading.Thread(target=handle_client, args=(client_socket, address))
         thread.start()
 
@@ -101,4 +114,7 @@ def handle_termination_server():
     stop_server_thread = True
 
     if server:
-        server.close()  # Close the server socket
+        try:
+            server.close()  # Close the server socket
+        except Exception as e:
+            print(f"Error closing server: {e}")
