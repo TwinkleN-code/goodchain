@@ -100,9 +100,11 @@ class User:
         phrase = generate_random_mnemonic()
         hashed_phrase = hashlib.sha256(phrase.encode()).hexdigest()
 
+        keys = load_from_file("key.txt")
+
         try:
             self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
-            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
+            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase, keys))
         except sqlite3.Error as e:
             print_header()
             print(f"Database error: {e}")

@@ -4,7 +4,8 @@ import threading
 import sqlite3
 import logging
 from database import Database
-from keys import save_key
+from keys import read_key
+from storage import load_from_file, save_to_file
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,16 +80,18 @@ def handle_client(conn, addr):
     finally:
         conn.close()
 
-def new_user(username, password, public_key, private_key, phrase):
+def new_user(username, password, private_key, public_key, phrase, key_encryption):
     # add new user to local database
     print(f"Adding new user {username} to database")
+    keys = load_from_file("key.txt")
+    if keys == []:
+        save_to_file(key_encryption ,"key.txt")
     try:
         db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, password, private_key, public_key, phrase))
     except sqlite3.Error as e:
         print(f"Database error: {e}")
         return
     # update key file
-    save_key(private_key)
 
 def update_password(user, new_password):
     # update password in local database
