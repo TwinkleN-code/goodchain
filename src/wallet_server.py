@@ -63,12 +63,12 @@ def handle_client(conn, addr):
         if received_data:
             unpickled_data = pickle.loads(received_data)
             logging.info(f"Received data from {addr}: {unpickled_data}")
-            if unpickled_data[0] == data_type_wallet[0]:
-                new_user(unpickled_data[1:])
-            elif unpickled_data[0] == data_type_wallet[1]:
-                update_password(unpickled_data[1:])
-            elif unpickled_data[0] == data_type_wallet[2]:
-                update_username(unpickled_data[1:])
+            if unpickled_data[0][0] == data_type_wallet[0]:
+                new_user(unpickled_data[0][1], unpickled_data[0][2], unpickled_data[0][3], unpickled_data[0][4], unpickled_data[0][5])
+            elif unpickled_data[0][0] == data_type_wallet[1]:
+                update_password(unpickled_data[0][1], unpickled_data[0][2])
+            elif unpickled_data[0][0] == data_type_wallet[2]:
+                update_username(unpickled_data[0][1], unpickled_data[0][2])
     except pickle.UnpicklingError as e:
         logging.error(f"Error in data from {addr}: {e}")
     except Exception as e:
@@ -78,6 +78,7 @@ def handle_client(conn, addr):
 
 def new_user(username, password, public_key, private_key, phrase):
     # add new user to local database
+    print(f"Adding new user {username} to database")
     try:
         db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, password, private_key, public_key, phrase))
     except sqlite3.Error as e:

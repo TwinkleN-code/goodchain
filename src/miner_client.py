@@ -5,8 +5,7 @@ data_type_miner = ["add block", "add transaction", "remove transaction", "block 
 miner_server_port = 9000
          
 def send_data_to_miner_servers(data):
-    server_ip = '192.168.178.101'
-
+    server_ip = '0.0.0.0'
     server_address = (server_ip, miner_server_port)
 
     try:
