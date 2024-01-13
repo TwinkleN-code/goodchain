@@ -8,7 +8,7 @@ from block_validation import automatic_tasks
 from utils import BLOCK_STATUS, calculate_spendable_balance, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file , calculate_balance, calculate_pending_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
-from storage import load_from_file, blockchain_file_path_client, transactions_file_path_client, transactions_file_path, blockchain_file_path
+from storage import transactions_file_path, blockchain_file_path
 import hashlib
 from wallet_client import send_data_to_miner_servers, send_data_to_wallet_servers, data_type_wallet, data_type_miner
 
@@ -100,11 +100,11 @@ class User:
         phrase = generate_random_mnemonic()
         hashed_phrase = hashlib.sha256(phrase.encode()).hexdigest()
 
-        keys = load_from_file("key.txt")
-
+        key = read_key()
+        print(key)
         try:
             self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
-            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase, keys))
+            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
         except sqlite3.Error as e:
             print_header()
             print(f"Database error: {e}")
