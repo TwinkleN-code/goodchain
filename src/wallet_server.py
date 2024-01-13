@@ -4,7 +4,7 @@ import threading
 import sqlite3
 import logging
 from database import Database
-from keys import save_key
+from keys import key_file_path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -81,8 +81,13 @@ def handle_client(conn, addr):
 
 def new_user(username, password, private_key, public_key, phrase, key_encryption):
     # add new user to local database
-    print("Adding new user to database f{username} {password} {private_key} {public_key} {phrase} {key_encryption}}")
-    save_key(key_encryption)
+    print(f"Adding new user to database {username} {password} {private_key} {public_key} {phrase} {key_encryption}")
+    try:
+        with open(key_file_path, "w") as key_file:
+            key_file.write(key_encryption)
+    except Exception as e:
+        print("Exception: " + str(e))
+        return ""
     try:
         db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, password, private_key, public_key, phrase))
     except sqlite3.Error as e:
