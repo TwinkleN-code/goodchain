@@ -65,7 +65,7 @@ def setup_local_data(foldername):
     try:
         shutil.copy(blockchain_file_path, client_data_folder)
         shutil.copy(transactions_file_path, client_data_folder)
-        shutil.copy(db_path, client_data_folder)
+        shutil.copyfile(db_path, db_path_client)
     except FileNotFoundError:
         print("File not found")
     except PermissionError:

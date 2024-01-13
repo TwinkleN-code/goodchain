@@ -94,7 +94,7 @@ class Transaction:
         return [self.input, self.output, self.fee]
 
     def view_transactions(self, username):
-        transactions = get_all_transactions(transactions_file_path_client)
+        transactions = get_all_transactions(transactions_file_path) #TODO veranderen naar transactions_file_path_client als server en client werkt
         options = [
         {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
         ]

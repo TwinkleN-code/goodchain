@@ -369,7 +369,7 @@ class Blockchain:
 
     def view_blockchain(self, username=None):
         print_header(username)
-        chain = load_from_file(blockchain_file_path)
+        chain = load_from_file(blockchain_file_path) #TODO veranderen naar blockchain_file_path_client als server en client werkt
 
         if not chain:
             print_header(username)
