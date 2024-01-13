@@ -104,7 +104,7 @@ class User:
         print(key)
         try:
             self.db.execute('INSERT INTO users (username, password, privatekey, publickey, phrase) VALUES (?, ?, ?, ?, ?)', (username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
-            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase))
+            send_data_to_wallet_servers((data_type_wallet[0], username, hashed_pw, encrypted_private_key, user_public_key, hashed_phrase, key))
         except sqlite3.Error as e:
             print_header()
             print(f"Database error: {e}")
