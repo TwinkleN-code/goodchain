@@ -109,7 +109,7 @@ def remove_block(block):
     # remove block from ledger
     remove_from_file(blockchain_file_path_client, block)
 
-def handle_termination_server():
+def handle_miner_termination_server():
     global stop_server_thread
     stop_server_thread = True
 

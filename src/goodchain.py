@@ -3,8 +3,8 @@ from auth import User
 from database import Database
 from notifications import notification
 from block_validation import validation_chain
-from miner_server import handle_termination_server, start_miner_server
-from wallet_server import start_wallet_server
+from miner_server import handle_miner_termination_server, start_miner_server
+from wallet_server import handle_wallet_termination_server, start_wallet_server
 from storage import setup_data_files
 from transaction import Transaction
 from keys import *
@@ -59,7 +59,8 @@ def main_menu():
         options = display_menu(user.current_user is not None) # Assuming that user.current_user is None when not logged in
         choice_result = display_menu_and_get_choice(options, user.current_user)
         if choice_result == "exit":
-            handle_termination_server()
+            handle_miner_termination_server()
+            handle_wallet_termination_server
             clear_screen()
             break     
 
