@@ -64,7 +64,7 @@ def handle_client(conn, addr):
             unpickled_data = pickle.loads(received_data)
             logging.info(f"Received data from {addr}: {unpickled_data}")
             if unpickled_data[0][0] == data_type_wallet[0]:
-                new_user(unpickled_data[0][1], unpickled_data[0][2], unpickled_data[0][3], unpickled_data[0][4], unpickled_data[0][5])
+                new_user(unpickled_data[0][1], unpickled_data[0][2], unpickled_data[0][3], unpickled_data[0][4], unpickled_data[0][5], unpickled_data[0][6])
             elif unpickled_data[0][0] == data_type_wallet[1]:
                 update_password(unpickled_data[0][1], unpickled_data[0][2])
             elif unpickled_data[0][0] == data_type_wallet[2]:
