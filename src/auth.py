@@ -208,7 +208,7 @@ class User:
         reward_transaction.add_output(public_key, REWARD_VALUE)
         reward_transaction.sign(decrypted_private_key)
 
-        transaction_pool.add_transaction(reward_transaction)
+        transaction_pool.add_transaction(reward_transaction, transactions_file_path)
 
     def transfer_coins(self):
         print_header(self.current_user)
