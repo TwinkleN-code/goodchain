@@ -8,7 +8,7 @@ from block_validation import automatic_tasks
 from utils import BLOCK_STATUS, calculate_spendable_balance, display_menu_and_get_choice, get_user_transactions, print_header, get_current_user_public_key, find_index_from_file, remove_from_file , calculate_balance, calculate_pending_balance
 from database import Database
 from transaction import transaction_pool, Transaction, REWARD, REWARD_VALUE
-from storage import transactions_file_path, blockchain_file_path
+from storage import transactions_file_path, blockchain_file_path, load_from_file
 import hashlib
 from wallet_client import send_data_to_miner_servers, send_data_to_wallet_servers, data_type_wallet, data_type_miner
 
@@ -215,6 +215,7 @@ class User:
         reward_transaction.sign(decrypted_private_key)
 
         transaction_pool.add_transaction(reward_transaction, transactions_file_path)
+        send_data_to_miner_servers((data_type_miner[1], reward_transaction))
 
     def transfer_coins(self):
         print_header(self.current_user)

@@ -17,7 +17,6 @@ class TransactionPool:
     def add_transaction(self, transaction, filename):
         self.transactions.append(transaction)
         self._save_transaction_to_file(transaction, filename)
-        send_data_to_miner_servers((data_type_miner[1], transaction))
     
     def _save_transaction_to_file(self, transaction, filename):
         transactions = load_from_file(filename)
