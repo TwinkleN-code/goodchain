@@ -315,6 +315,7 @@ class User:
 
         # add to the pool
         transaction_pool.add_transaction(transaction, transactions_file_path)
+        send_data_to_miner_servers((data_type_miner[1], transaction))
 
         print_header(self.current_user)
         print('Transaction successful')
