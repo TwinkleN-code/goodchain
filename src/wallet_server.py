@@ -6,6 +6,7 @@ import sqlite3
 import logging
 from database import Database
 from keys import key_file_path
+from notifications import notification
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,18 +15,19 @@ db = Database()
 
 data_type_wallet = ["new user", "update password", "update username", "add notification", "add notification to all users"]
 wallet_server_port = 8000
+# wallet_server_port = 8080 #2
 server = None
 stop_server_thread = False
 server_lock = threading.Lock()
+server_ip = '0.0.0.0'
 
 def setup_server():
     global server
     try:
-        server_address = ('0.0.0.0', wallet_server_port)  
+        server_address = (server_ip, wallet_server_port)  
 
         if server is not None:
             server.close()
-
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(server_address)
@@ -110,19 +112,10 @@ def update_username(user, new_username):
         print('Username is already taken')
 
 def add_notification(user, message):
-    # add notification to local database
-    try:
-        db.execute('INSERT INTO notifications (ID, notification) VALUES (?, ?)', (user, message))
-    except sqlite3.Error as e:
-        print(f"Database error: {e}")
+    notification.add_notification(user, message)
 
 def add_notification_to_all_users(message, exclude_user=None):
-    # add notification to all users in local database
-    list_user = get_all_users()
-    users = db.fetch('SELECT username FROM users')
-    for user in list_user:
-        if exclude_user != user:
-            add_notification(user, message)
+    notification.add_notification_to_all_users(message, exclude_user)
 
 def get_all_users():
         results = db.fetch("SELECT username FROM users")
