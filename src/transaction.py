@@ -2,7 +2,7 @@ from notifications import notification
 from database import Database
 from miner_client import send_data_to_miner_servers, data_type_miner
 from utils import BLOCK_STATUS, calculate_balance, calculate_pending_balance, get_current_user_public_key, remove_from_file, sign, verify, print_header, get_all_transactions, display_menu_and_get_choice
-from storage import save_to_file, load_from_file, transactions_file_path_client, transactions_file_path, blockchain_file_path
+from storage import save_to_file, load_from_file, transactions_file_path, blockchain_file_path
 import time
 from wallet_client import send_data_to_miner_servers
 
@@ -72,7 +72,7 @@ class Transaction:
         
         # check if enough balance
         chain = load_from_file(blockchain_file_path)
-        pool_transactions = load_from_file(transactions_file_path_client)
+        pool_transactions = load_from_file(transactions_file_path)
         available_balance = 0
         pending_balance = 0
         for block in chain:
@@ -95,7 +95,7 @@ class Transaction:
         return [self.input, self.output, self.fee]
 
     def view_transactions(self, username):
-        transactions = get_all_transactions(transactions_file_path) #TODO veranderen naar transactions_file_path_client als server en client werkt
+        transactions = get_all_transactions(transactions_file_path)
         options = [
         {"option": "1", "text": "Back to main menu", "action": lambda: "back"}
         ]
@@ -144,7 +144,7 @@ class Transaction:
     
 def cancel_invalid_transactions(username):
     db = Database()
-    pool_transactions = load_from_file(transactions_file_path_client)
+    pool_transactions = load_from_file(transactions_file_path)
     public_key = get_current_user_public_key(username)
     
     if pool_transactions:

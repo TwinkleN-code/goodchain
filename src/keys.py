@@ -164,3 +164,5 @@ def decrypt_private_key(encryption_key, encrypted_private_key):
     key_object = Fernet(encryption_key)
     private_key = key_object.decrypt(encrypted_private_key)
     return private_key.decode('utf-8')
+
+set_key_file()

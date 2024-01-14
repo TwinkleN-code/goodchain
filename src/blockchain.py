@@ -2,7 +2,7 @@ import time
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from notifications import notification
-from transaction import REWARD_VALUE, REWARD, Transaction, NORMAL, transaction_pool
+from transaction import REWARD_VALUE, REWARD, Transaction, transaction_pool
 from keys import fetch_decrypted_private_key
 from storage import *
 from utils import *
@@ -105,12 +105,12 @@ class Blockchain:
         else:
             blocks = self.chain
         save_to_file(blocks, blockchain_file_path)
-        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path_client)
+        save_to_file(self.last_mined_timestamp, last_mined_timestamp_path)
 
     def _load_last_mined_timestamp(self):
         # Check if the file exists
-        if os.path.exists(last_mined_timestamp_path_client):
-            time_stamp = load_from_file(last_mined_timestamp_path_client)
+        if os.path.exists(last_mined_timestamp_path):
+            time_stamp = load_from_file(last_mined_timestamp_path)
             if time_stamp:
                 # Load the last mined timestamp from the file
                 return time_stamp[0]
@@ -150,7 +150,7 @@ class Blockchain:
 
             # check if block is created by miner
             if i != 0:
-                miner_username = get_username_miner(blockchain_file_path_client, i)
+                miner_username = get_username_miner(blockchain_file_path, i)
                 if miner_username == current_user:
                     continue
 
@@ -218,14 +218,14 @@ class Blockchain:
             return
         
         # new block can only be mined if every block is valid
-        load_chain = load_from_file(blockchain_file_path_client)
+        load_chain = load_from_file(blockchain_file_path)
         if load_chain:
             for block in reversed(load_chain):
                 if block.status != BLOCK_STATUS[1] and block.id != 0 and block.previous_hash != "0":
                     print(f"Mining is not possible until the validation of block {block.id} is completed.")
                     return
 
-        transactions = load_from_file(transactions_file_path_client)
+        transactions = load_from_file(transactions_file_path)
         transactions_to_mine = []
         indices_to_remove = []
         # Need to have 5 transactions to mine (4 transactions + mining reward)
@@ -233,7 +233,7 @@ class Blockchain:
             print("Not enough transactions to mine.")
             return
         elif len(transactions) >= 10:
-            transactions_list = get_all_transactions(transactions_file_path_client)
+            transactions_list = get_all_transactions(transactions_file_path)
             print("All Transactions: \n")
             for tx in transactions_list:
                 if len(tx) > 5:
@@ -369,8 +369,7 @@ class Blockchain:
 
     def view_blockchain(self, username=None):
         print_header(username)
-        chain = load_from_file(blockchain_file_path) #TODO veranderen naar blockchain_file_path_client als server en client werkt
-
+        chain = load_from_file(blockchain_file_path) 
         if not chain:
             print_header(username)
             print("No blockchain found.")

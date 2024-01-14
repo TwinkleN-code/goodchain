@@ -5,7 +5,7 @@ from blockchain import Blockchain
 from block_validation import block_valid
 from transaction import TransactionPool
 from utils import remove_from_file
-from storage import load_from_file, save_to_file, blockchain_file_path_client, transactions_file_path_client
+from storage import load_from_file, save_to_file, blockchain_file_path, transactions_file_path
 from auth import user_object
 
 data_type_miner = ["add block", "add transaction" , "remove transaction", "block validation", "remove block", "update transaction"]
@@ -17,7 +17,7 @@ server_lock = threading.Lock()
 def setup_server():
     global server
     try:
-        server_address = ('0.0.0.0', miner_server_ports)   
+        server_address = ('0.0.0.0', miner_server_ports)
 
         if server is not None:
             server.close()
@@ -76,7 +76,7 @@ def handle_client(conn, addr):
 
 def add_block(new_block):
     # add new block to local ledger
-    blocks = load_from_file(blockchain_file_path_client)
+    blocks = load_from_file(blockchain_file_path)
     if len(blocks) > 0: 
         blocks.append(new_block)
     else:
@@ -84,7 +84,7 @@ def add_block(new_block):
         bc.chain.append(new_block)
         blocks = bc.chain
 
-    save_to_file(blocks, blockchain_file_path_client)
+    save_to_file(blocks, blockchain_file_path)
 
     if user_object.current_user is not None:
         block_valid(user_object.current_user) 
@@ -93,19 +93,19 @@ def add_block(new_block):
 def add_transaction(transaction):
     # add transaction to local pool
     tp = TransactionPool()
-    tp.add_transaction(transaction, transactions_file_path_client)
+    tp.add_transaction(transaction, transactions_file_path)
 
 def remove_transaction(transaction):
     # remove transaction from local pool
-    remove_from_file(transactions_file_path_client, transaction)
+    remove_from_file(transactions_file_path, transaction)
 
 def block_validation(blockchain):
     # update ledger
-    save_to_file(blockchain, blockchain_file_path_client)
+    save_to_file(blockchain, blockchain_file_path)
 
 def remove_block(block):
     # remove block from ledger
-    remove_from_file(blockchain_file_path_client, block)
+    remove_from_file(blockchain_file_path, block)
 
 def handle_miner_termination_server():
     global stop_server_thread
