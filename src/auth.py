@@ -245,7 +245,7 @@ class User:
             return
 
         # check if enough balance [amount_to_transfer + transfer_fee <= available balance - (pending balance from pool + pending balance from blocks)]
-        chain = load_from_file(blockchain_file_path) #TODO veranderen naar blockchain_file_path_client als server en client werkt
+        chain = load_from_file(blockchain_file_path) 
         public_key = get_current_user_public_key(self.current_user)
         available_balance = 0
         pending_balance = 0
@@ -260,7 +260,7 @@ class User:
             elif block.status == BLOCK_STATUS[0]: # balance from pending blocks
                 pending_balance += calculate_balance(public_key, block.transactions)
 
-        pool_transactions = load_from_file(transactions_file_path) #TODO veranderen naar transactions_file_path_client als server en client werkt
+        pool_transactions = load_from_file(transactions_file_path) 
         if pool_transactions:
             spendable_balance += calculate_spendable_balance(public_key, pool_transactions)
 
@@ -327,7 +327,6 @@ class User:
         print_header(self.current_user)
         # show all user transactions from the pool
         transactions = get_user_transactions(transactions_file_path, self.current_user) # [number, input amount, username sender, fee]
-        #TODO veranderen naar transactions_file_path_client als server en client werkt
         if transactions == []:
             print_header(self.current_user)
             print("You have no pending transactions")
@@ -373,7 +372,6 @@ class User:
 
     def edit_transaction(self):
         transactions = get_user_transactions(transactions_file_path, self.current_user) # [number, input amount, username sender, fee]
-        #TODO veranderen naar transactions_file_path_client als server en client werkt
         if transactions == []:
             print_header(self.current_user)
             print("You have no pending transactions")
@@ -453,7 +451,6 @@ class User:
                 # check if enough balance
                 chain = load_from_file(blockchain_file_path)
                 pool_transactions = load_from_file(transactions_file_path)
-                #TODO paths veranderen als server en client werkt
                 available_balance = 0
                 pending_balance = 0
                 spendable_balance = 0
@@ -574,8 +571,8 @@ class User:
     def view_transaction_history(self):
         print_header(self.current_user)
         db = Database()
-        transaction_pool = load_from_file(transactions_file_path) #TODO path veranderen
-        chain = load_from_file(blockchain_file_path) #TODO path veranderen
+        transaction_pool = load_from_file(transactions_file_path) 
+        chain = load_from_file(blockchain_file_path) 
         public_key = get_current_user_public_key(self.current_user)
         options = [
         {"option": "1", "text": "Back to main menu", "action": lambda: "back"}

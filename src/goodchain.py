@@ -1,13 +1,12 @@
 import threading
 from auth import User
 from database import Database
+from keys import view_user_keys
 from notifications import notification
 from block_validation import validation_chain
 from miner_server import handle_miner_termination_server, start_miner_server
 from wallet_server import handle_wallet_termination_server, start_wallet_server
-from storage import setup_data_files
 from transaction import Transaction
-from keys import *
 from recover_key import recover_private_key
 from utils import clear_screen, print_header, display_menu_and_get_choice
 from blockchain import Blockchain
@@ -60,12 +59,10 @@ def main_menu():
         choice_result = display_menu_and_get_choice(options, user.current_user)
         if choice_result == "exit":
             handle_miner_termination_server()
-            handle_wallet_termination_server
+            handle_wallet_termination_server()
             clear_screen()
             break     
 
-setup_data_files()
-set_key_file()
 db.setup()
 server_thread = threading.Thread(target=start_miner_server)
 server_thread.start()

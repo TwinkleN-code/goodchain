@@ -1,3 +1,4 @@
+import os
 import pickle
 import socket
 import threading
@@ -82,7 +83,7 @@ def handle_client(conn, addr):
 def new_user(username, password, private_key, public_key, phrase, key_encryption):
     # add new user to local database
     print(f"Adding new user to database {username} {password} {private_key} {public_key} {phrase} {key_encryption}")
-    try:
+    try: 
         with open(key_file_path, "w") as key_file:
             key_file.write(key_encryption)
     except Exception as e:

@@ -1,4 +1,3 @@
-import os
 from cryptography.exceptions import *
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
