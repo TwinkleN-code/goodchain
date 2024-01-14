@@ -1,4 +1,5 @@
 from datetime import datetime
+from threading import Lock
 from keys import decrypt, encrypt, read_key
 from database import Database
 from utils import display_menu_and_get_choice, print_header
@@ -8,6 +9,7 @@ class Notification:
     def __init__(self):
         self.db = Database()
         self.database_key = read_key()
+        self.lock = Lock()
 
     def view_notifications(self, username):
         print_header(username)
@@ -28,19 +30,19 @@ class Notification:
             return
         
     def add_notification(self, username, message):
-        notif = self.get_current_time() + ": " + message
-        #encrypt info
-        encrypted_notif = encrypt(notif, self.database_key)
-        id = self.get_user_id(username)
-        self.db.execute('INSERT INTO notifications (ID, notification) VALUES (?, ?)', (id, encrypted_notif))
-        send_data_to_wallet_servers([data_type_wallet[3], username, message])
+        with self.lock:   
+            notif = self.get_current_time() + ": " + message
+            #encrypt info
+            encrypted_notif = encrypt(notif, self.database_key)
+            id = self.get_user_id(username)
+            self.db.execute('INSERT INTO notifications (ID, notification) VALUES (?, ?)', (id, encrypted_notif))
+
 
     def add_notification_to_all_users(self, message, exclude_user=None):            
         list_user = self.get_all_users()
         for user in list_user:
             if exclude_user != user:
                 self.add_notification(user, message)
-        send_data_to_wallet_servers([data_type_wallet[4], message, exclude_user if exclude_user else None])
         
     def get_current_time(self):
         return (datetime.now()).strftime("%d-%m-%Y %H:%M")

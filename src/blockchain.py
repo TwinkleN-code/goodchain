@@ -9,6 +9,7 @@ from utils import *
 import os
 import datetime
 from miner_client import send_data_to_miner_servers, data_type_miner
+from wallet_client import send_data_to_wallet_servers, data_type_wallet
 DIFFICULTY = 5
 
 class Block:
@@ -236,7 +237,7 @@ class Blockchain:
             transactions_list = get_all_transactions(transactions_file_path)
             print("All Transactions: \n")
             for tx in transactions_list:
-                if len(tx) > 5:
+                if len(tx) > 6:
                     print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with {tx[4]} transaction fee")
                 else:
                     print(f"{str(tx[0])}. {tx[1]} to {tx[2]} with 0 transaction fee")
@@ -354,6 +355,8 @@ class Blockchain:
             notification.add_notification_to_all_users(f"new added block with id {new_block.id} waiting for verification", username)
             notification.add_notification(username, f"pending mining reward of {REWARD_VALUE} coin(s) added to block waiting for verification")
 
+            send_data_to_wallet_servers((data_type_wallet[4], f"new added block with id {new_block.id} waiting for verification", username))
+
         # removing transactions from pool
         for index in sorted(indices_to_remove, reverse=True):
             remove_from_file(transactions_file_path, index) # remove from main pool
@@ -449,10 +452,13 @@ def check_validators(chain, miner_username):
                 receiver_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
                 notification.add_notification(get_sender_username[0][0], f"successful transaction: {tx.input[1]} coin(s) to {receiver_username[0][0]}")
                 notification.add_notification(receiver_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}")
+                send_data_to_wallet_servers((data_type_wallet[3], get_sender_username[0][0], f"successful transaction: {tx.input[1]} coin(s) to {receiver_username[0][0]}"))
+                send_data_to_wallet_servers((data_type_wallet[3], receiver_username[0][0], f"successful transaction received: {tx.input[1]} coin(s) from {get_sender_username[0][0]}"))
             else:
                 #reward notification
                 get_username = db.fetch('SELECT username FROM users WHERE publickey=?', (tx.output[0], ))
                 notification.add_notification(get_username[0][0], f"reward of {tx.output[1]} coin(s) added to you balance")
+                send_data_to_wallet_servers((data_type_wallet[3], get_username[0][0], f"reward of {tx.output[1]} coin(s) added to you balance"))
         
         #change status of block 
         chain[-1].status = BLOCK_STATUS[1]
@@ -462,6 +468,12 @@ def check_validators(chain, miner_username):
         notification.add_notification_to_all_users(f"new size of blockchain: {len(chain)}")
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} status changed from {BLOCK_STATUS[0]} to {BLOCK_STATUS[1]}")
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is verified and added to the blockchain")
+
+        #send notification to servers
+        send_data_to_wallet_servers((data_type_wallet[4], f"block with id {chain[-1].id} verified and added to the blockchain", miner_username))
+        send_data_to_wallet_servers((data_type_wallet[4], f"new size of blockchain: {len(chain)}"))
+        send_data_to_wallet_servers((data_type_wallet[3], miner_username, f"Your mined block with id {chain[-1].id} status changed from {BLOCK_STATUS[0]} to {BLOCK_STATUS[1]}"))
+        send_data_to_wallet_servers((data_type_wallet[3], miner_username, f"Your mined block with id {chain[-1].id} is verified and added to the blockchain"))
 
     elif invalid_flags >= 3:
         chain[-1].status = BLOCK_STATUS[2]
@@ -483,6 +495,7 @@ def check_validators(chain, miner_username):
 
         #notify user's rejected block
         notification.add_notification(miner_username, f"Your mined block with id {chain[-1].id} is rejected")
+        send_data_to_wallet_servers((data_type_wallet[3], miner_username, f"Your mined block with id {chain[-1].id} is rejected"))
         return
 
     #update ledger

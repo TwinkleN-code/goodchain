@@ -10,18 +10,19 @@ from auth import user_object
 
 data_type_miner = ["add block", "add transaction" , "remove transaction", "block validation", "remove block", "update transaction"]
 miner_server_ports = 9000
+# miner_server_ports = 9090 #2 
 server = None
 stop_server_thread = False
 server_lock = threading.Lock()
+server_ip = '0.0.0.0'
 
 def setup_server():
     global server
     try:
-        server_address = ('0.0.0.0', miner_server_ports)
+        server_address = (server_ip, miner_server_ports)
 
         if server is not None:
             server.close()
-
 
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(server_address)
