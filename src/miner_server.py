@@ -68,6 +68,8 @@ def handle_client(conn, addr):
                 block_validation(unpickled_data[1])
             elif unpickled_data[0] == data_type_miner[4]:
                 remove_block(unpickled_data[1])
+            elif unpickled_data[0] == data_type_miner[6]:
+                remove_list_transactions(unpickled_data[1])
     except pickle.UnpicklingError as e:
         print(f"Error data: {e}")
     except Exception as e:
@@ -100,17 +102,21 @@ def add_transaction(transaction):
     tp = TransactionPool()
     tp.add_transaction(transaction, transactions_file_path)
 
-def remove_transaction(transaction):
+def remove_transaction(index):
     # remove transaction from local pool
-    remove_from_file(transactions_file_path, transaction)
+    remove_from_file(transactions_file_path, index)
+
+def remove_list_transactions(indices_to_remove):
+    for index in sorted(indices_to_remove, reverse=True):
+        remove_from_file(transactions_file_path, index) 
 
 def block_validation(blockchain):
     # update ledger
     save_to_file(blockchain, blockchain_file_path)
 
-def remove_block(block):
+def remove_block(index):
     # remove block from ledger
-    remove_from_file(blockchain_file_path, block)
+    remove_from_file(blockchain_file_path, index)
 
 def handle_miner_termination_server():
     global stop_server_thread
