@@ -1,6 +1,7 @@
 import pickle
 import socket
 import threading
+import time
 from blockchain import Blockchain
 from block_validation import block_valid
 from transaction import TransactionPool
@@ -78,10 +79,10 @@ def handle_client(conn, addr):
 def add_block(new_block):
     # add new block to local ledger
     blocks = load_from_file(blockchain_file_path)
+    bc = Blockchain()
     if len(blocks) > 0: 
         blocks.append(new_block)
     else:
-        bc = Blockchain()
         bc.chain.append(new_block)
         blocks = bc.chain
 
@@ -89,6 +90,9 @@ def add_block(new_block):
 
     if user_object.current_user is not None:
         block_valid(user_object.current_user) 
+    
+    # update last mined timestamp
+    bc.last_mined_timestamp = time.time()
 
     
 def add_transaction(transaction):
