@@ -371,7 +371,7 @@ class Blockchain:
             
             
         # send indices to servers to remove from pool
-        send_data_to_miner_servers((data_type_miner[6], indices_to_remove))
+        send_data_to_miner_servers((data_type_miner[5], indices_to_remove))
 
         
         # update invalid transactions
