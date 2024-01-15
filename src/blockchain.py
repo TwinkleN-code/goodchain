@@ -35,7 +35,8 @@ class Block:
         pattern = '0' * difficulty
         start_time = time.time()
         while True:
-            if transaction_pool.transactions == []:
+            transactions = load_from_file(transactions_file_path)
+            if transactions == []:
                 return None
             self.hash = self.compute_hash()
             if self.hash[:difficulty] == pattern:
@@ -345,6 +346,7 @@ class Blockchain:
                 new_block = Block(transactions_to_mine, self.chain[-1].hash, self.next_block_id())
             result_diff = new_block.mine(self.difficulty, username)
             if result_diff == None:
+                print_header(username)
                 print("Someone else mined a block already")
                 return
             new_block.difficulty = result_diff

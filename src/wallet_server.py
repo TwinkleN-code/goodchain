@@ -30,7 +30,6 @@ def setup_server():
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(server_address)
         server.listen()
-        logging.info(f"Server listening on {server_address}")
         return server
         
     except OSError:
@@ -51,7 +50,6 @@ def start_wallet_server():
         with server_lock:
             try:
                 client_socket, address = server.accept()
-                logging.info(f"Accepted connection from {address}")
             except OSError as e:
                 continue
         thread = threading.Thread(target=handle_client, args=(client_socket, address))
@@ -62,7 +60,6 @@ def handle_client(conn, addr):
         received_data = conn.recv(8888)
         if received_data:
             unpickled_data = pickle.loads(received_data)
-            logging.info(f"Received data from {addr}: {unpickled_data}")
             if unpickled_data[0][0] == data_type_wallet[0]:
                 new_user(unpickled_data[0][1], unpickled_data[0][2], unpickled_data[0][3], unpickled_data[0][4], unpickled_data[0][5], unpickled_data[0][6])
             elif unpickled_data[0][0] == data_type_wallet[1]:
