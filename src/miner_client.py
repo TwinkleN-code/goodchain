@@ -2,8 +2,7 @@ import pickle
 import socket
 
 data_type_miner = ["add block", "add transaction", "remove transaction", "block validation", "remove block", "update transaction"]
-#miner_server_port = 9000 #2
-miner_server_port = 9090
+miner_server_port = 9000
          
 def send_data_to_miner_servers(data):
     server_ip = '192.168.178.101'   

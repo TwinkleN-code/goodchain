@@ -6,12 +6,11 @@ from blockchain import Blockchain
 from block_validation import block_valid
 from transaction import TransactionPool
 from utils import remove_from_file
-from storage import load_from_file, save_to_file, blockchain_file_path, transactions_file_path
+from storage import load_from_file, save_to_file, blockchain_file_path, transactions_file_path, last_mined_timestamp_path
 from auth import user_object
 
 data_type_miner = ["add block", "add transaction" , "remove transaction", "block validation", "remove block", "update transaction"]
 miner_server_ports = 9000
-# miner_server_ports = 9090 #2 
 server = None
 stop_server_thread = False
 server_lock = threading.Lock()
@@ -93,6 +92,7 @@ def add_block(new_block):
     
     # update last mined timestamp
     bc.last_mined_timestamp = time.time()
+    save_to_file(bc.last_mined_timestamp, last_mined_timestamp_path)
 
     
 def add_transaction(transaction):

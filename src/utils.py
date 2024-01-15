@@ -4,12 +4,12 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from database import Database
 from storage import load_from_file, save_to_file, blockchain_file_path, transactions_file_path
+import os
 
 BLOCK_STATUS = ["pending", "verified", "rejected", "genesis"]
 
 def clear_screen():
-    # os.system('cls' if os.name == 'nt' else 'clear')
-    pass
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def display_menu_and_get_choice(options , username=None, *args):
     """Display menu based on the provided options and get user's choice."""

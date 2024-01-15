@@ -1,4 +1,3 @@
-import os
 import pickle
 import socket
 import threading
@@ -15,7 +14,6 @@ db = Database()
 
 data_type_wallet = ["new user", "update password", "update username", "add notification", "add notification to all users"]
 wallet_server_port = 8000
-# wallet_server_port = 8080 #2
 server = None
 stop_server_thread = False
 server_lock = threading.Lock()
@@ -84,7 +82,6 @@ def handle_client(conn, addr):
 
 def new_user(username, password, private_key, public_key, phrase, key_encryption):
     # add new user to local database
-    print(f"Adding new user to database {username} {password} {private_key} {public_key} {phrase} {key_encryption}")
     try: 
         with open(key_file_path, "w") as key_file:
             key_file.write(key_encryption)
