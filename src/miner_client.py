@@ -6,6 +6,7 @@ miner_server_port = 9000
          
 def send_data_to_miner_servers(data):
     server_ip = '0.0.0.0' #put your ip here
+
     server_address = (server_ip, miner_server_port)
 
     try:

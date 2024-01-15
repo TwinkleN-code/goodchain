@@ -10,6 +10,7 @@ import os
 import datetime
 from miner_client import send_data_to_miner_servers, data_type_miner
 from wallet_client import send_data_to_wallet_servers, data_type_wallet
+
 DIFFICULTY = 5
 
 class Block:
@@ -364,11 +365,14 @@ class Blockchain:
 
             send_data_to_wallet_servers((data_type_wallet[4], f"new added block with id {new_block.id} waiting for verification", username))
 
-        # removing transactions from pool
+        # removing transactions from main pool
         for index in sorted(indices_to_remove, reverse=True):
-            remove_from_file(transactions_file_path, index) # remove from main pool
-            # send transaction to servers 
-            send_data_to_miner_servers((data_type_miner[2], index))
+            remove_from_file(transactions_file_path, index) 
+            
+            
+        # send indices to servers to remove from pool
+        send_data_to_miner_servers((data_type_miner[6], indices_to_remove))
+
         
         # update invalid transactions
         if invalid_tx:

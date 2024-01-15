@@ -1,6 +1,7 @@
 import os
 import pickle
 
+
 data_folder = "data"
 blockchain_file_path = os.path.join(data_folder, 'blockchain.dat')
 transactions_file_path = os.path.join(data_folder, 'transactions.dat')
@@ -9,10 +10,14 @@ last_mined_timestamp_path = os.path.join(data_folder, "last_mined_timestamp.dat"
 node_data = "node_data"
 
 def save_to_file(data, filename):
-    with open(filename, "wb") as file:
-        pickle.dump(data, file)
+    try:
+        with open(filename, "wb") as file:
+            pickle.dump(data, file)
+    except (FileNotFoundError, EOFError, pickle.UnpicklingError, ValueError) as e:
+        print(f"Error saving to {filename}: {e}")
 
-def load_from_file(filename):
+
+def load_from_file(filename):    
     try:
         with open(filename, "rb") as file:
             data = pickle.load(file)
